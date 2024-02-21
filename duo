@@ -35,5 +35,5 @@ case "$1" in
       "$0" sync-backlight
     done
     ;;
-  *) echo "Usage: duo <top|bottom|both|bat-limit|sync-backlight|watch-backlight>"
+  *) echo "Usage: duo <top|bottom|both|set-displays|toggle|bat-limit|sync-backlight|watch-backlight>"
 esac
