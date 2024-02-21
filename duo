@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 case "$1" in
-  init)
+  init-displays)
     if lsusb|grep 0b05:1b2c ; then
       "$0" top
     else
