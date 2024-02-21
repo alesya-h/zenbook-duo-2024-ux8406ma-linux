@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+case "$1" in
+  top)
+    gnome-monitor-config set -LpM eDP-1 -m 2880x1800@120.000 -s 1.75 -x 0 -y 0
+    ;;
+  both)
+    gnome-monitor-config set -LpM eDP-1 -m 2880x1800@120.000 -s 1.75 -x 0 -y 0 -LM eDP-2 -m 2880x1800@120.000 -s 1.75 -x 0 -y 1030
+    ;;
+  bottom)
+    gnome-monitor-config set -LpM eDP-2 -m 2880x1800@120.000 -s 1.75 -x 0 -y 0
+    ;;
+  toggle)
+    if gnome-monitor-config list|grep OFF > /dev/null; then
+      "$0" both
+    else
+      "$0" top
+    fi
+    ;;
+  bat-limit)
+    echo 80 | microsudo tee /sys/class/power_supply/BAT0/charge_control_end_threshold
+    ;;
+  sync-backlight)
+    cat /sys/class/backlight/intel_backlight/brightness |sudo /usr/bin/env tee /sys/class/backlight/card0-eDP-2-backlight/brightness
+    ;;
+  watch-backlight)
+    "$0" sync-backlight
+    while inotifywait -e modify /sys/class/backlight/intel_backlight/brightness ; do
+      "$0" sync-backlight
+    done
+    ;;
+  *) echo "Usage: duo <top|bottom|both|bat-limit|sync-backlight|watch-backlight>"
+esac
