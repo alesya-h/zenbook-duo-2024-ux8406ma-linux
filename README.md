@@ -14,12 +14,16 @@ You MUST log out and log in again after doing it.
 After that go to Settings -> Keyboard -> (at the bottom) Keyboard Shortcuts -> View and Customize Shortcuts -> Custom Shortcuts and press +.
 
 * Name: "toggle dualscreen mode" or anything else.
-* Command: `/absolute/path/to/this/repo/duo toggle`.
+* Command: `/absolute/path/to/this/repo/duo set-displays`.
 * Shortcut: press "Set Shortcut..." and attach or detach the keyboard (doesn't matter, it sends the same event).
 
 <img src="https://github.com/alesya-h/zenbook-duo-2024-ux8406ma-linux/assets/209175/54d08da6-cba2-49a8-abcf-9eadcd5869d2" width="50%" height="50%">
 
 Press "Add" in the top right corner, close everything and log out and in again. Unlike usual shortcuts, this one doesn't work before logging out.
+
+You also want to add `duo set-displays` to your startup so it'll set your laptop to single or dual screen when you log in.
+
+For manual screen management there are `duo top`, `duo bottom`, `duo both` and `duo toggle` (toggles between top and both) commands.
 
 ## brightness sync
 
