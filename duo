@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 case "$1" in
+  init)
+    if lsusb|grep 0b05:1b2c ; then
+      "$0" top
+    else
+      "$0" both
+    fi
+    ;;
   top)
     gnome-monitor-config set -LpM eDP-1 -m 2880x1800@120.000 -s 1.75 -x 0 -y 0
     ;;
