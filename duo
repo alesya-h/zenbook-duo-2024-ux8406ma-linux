@@ -17,6 +17,13 @@ case "$1" in
   bottom)
     gnome-monitor-config set -LpM eDP-2 -m 2880x1800@120.000 -s 1.75 -x 0 -y 0
     ;;
+  status)
+    case `gnome-monitor-config list|grep OFF` in
+      "Monitor [ eDP-2 ] OFF") echo top ;;
+      "Monitor [ eDP-1 ] OFF") echo bottom ;;
+      "") echo both ;;
+    esac
+    ;;
   toggle)
     if gnome-monitor-config list|grep OFF > /dev/null; then
       "$0" both
@@ -36,5 +43,5 @@ case "$1" in
       "$0" sync-backlight
     done
     ;;
-  *) echo "Usage: duo <top|bottom|both|set-displays|toggle|bat-limit|sync-backlight|watch-backlight>"
+  *) echo "Usage: duo <top|bottom|both|set-displays|toggle|status|bat-limit|sync-backlight|watch-backlight>"
 esac
