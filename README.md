@@ -3,7 +3,7 @@ automatic screen on/off (GNOME-specific), brightness sync, battery limiter
 
 ## How to use dualscreen toggle on GNOME
 
-Install https://github.com/jadahl/gnome-monitor-config. I packaged it for NixOS already, but need to submit a pull-request.
+Install https://github.com/jadahl/gnome-monitor-config. I packaged it for NixOS already, see https://github.com/NixOS/nixpkgs/pull/290444.
 
 Since WLAN button code is used for keyboard attach/detach events first we need to disable it. Open dconf-editor and edit the key /org/gnome/settings-daemon/plugins/media-keys/rfkill-static and remove XF86WLAN from the list:
 
