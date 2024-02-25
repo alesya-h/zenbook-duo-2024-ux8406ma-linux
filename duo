@@ -32,8 +32,10 @@ case "$1" in
     fi
     ;;
   set-tablet-mapping)
-    dconf write /org/gnome/desktop/peripherals/tablets/04f3:425b/output "['SDC', '0x419d', '0x00000000', 'eDP-1']"
-    dconf write /org/gnome/desktop/peripherals/tablets/04f3:425a/output "['SDC', '0x419d', '0x00000000', 'eDP-2']"
+    for type in tablets touchscreens; do
+      dconf write /org/gnome/desktop/peripherals/${type}/04f3:425b/output "['SDC', '0x419d', '0x00000000', 'eDP-1']"
+      dconf write /org/gnome/desktop/peripherals/${type}/04f3:425a/output "['SDC', '0x419d', '0x00000000', 'eDP-2']"
+    done
     ;;
   bat-limit)
     echo ${2:-80} | sudo /usr/bin/env tee /sys/class/power_supply/BAT0/charge_control_end_threshold
