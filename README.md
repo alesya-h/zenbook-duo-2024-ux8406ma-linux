@@ -11,6 +11,8 @@ Since WLAN button code is used for keyboard attach/detach events first we need t
 
 You MUST log out and log in again after doing it.
 
+Before the next steps, you may need or want to change the scaling settings or change the config at the top of `duo` based on the version of the duo that you have (1080p vs 3k display models)
+
 After that go to Settings -> Keyboard -> (at the bottom) Keyboard Shortcuts -> View and Customize Shortcuts -> Custom Shortcuts and press +.
 
 * Name: "toggle dualscreen mode" or anything else.
@@ -44,7 +46,9 @@ Brightness control requires root permissions. I prefer to have sudo with a passw
   };
 ```
 
-Once the sudo setup is done you can either run `duo sync-backlight` to sync it once (you may want to bind it to some hotkey) or you can run `duo watch-backlight`, presumably at login, and it will keep syncing your brightness from the top display to the bottom one.
+Once the sudo setup is done you can either run `duo sync-backlight` to sync it once (you may want to bind it to some hotkey) or you can run `duo watch-backlight` at login and it will keep syncing your brightness from the top display to the bottom one.
+
+For most linux distros there is an included systemd service file: `brightness-sync.service` that just needs `/path/to/duo` changed before moving it to `/etc/systemd/system` to enable brightness sync in the background.
 
 ## battery limiter
 
