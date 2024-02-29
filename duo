@@ -19,7 +19,7 @@ function suenv {
 }
 
 case "$1" in
-  set-displays)
+  set-displays|normal|bottom-up)
     sleep 1
     if lsusb|grep 0b05:1b2c ; then
       "$0" top
@@ -39,6 +39,16 @@ case "$1" in
   bottom)
     gnome-monitor-config set \
       -LpM eDP-2 -m $prefered_resolution -s $ui_scale -x 0 -y 0
+    ;;
+  left-up)
+    gnome-monitor-config set \
+      -LpM eDP-2 -m $prefered_resolution -s $ui_scale -t left  -x 0         -y 0 \
+      -LM  eDP-1 -m $prefered_resolution -s $ui_scale -t left  -x $y_offset -y 0
+    ;;
+  right-up)
+    gnome-monitor-config set \
+      -LM  eDP-1 -m $prefered_resolution -s $ui_scale -t right -x 0         -y 0 \
+      -LpM eDP-2 -m $prefered_resolution -s $ui_scale -t right -x $y_offset -y 0
     ;;
   status)
     case "$(gnome-monitor-config list|grep OFF)" in
@@ -75,5 +85,12 @@ case "$1" in
       "$0" sync-backlight
     done
     ;;
-  *) echo "Usage: duo <top|bottom|both|set-displays|toggle|status|set-tablet-mapping|bat-limit|sync-backlight|watch-backlight>"
+  watch-rotation)
+    monitor-sensor --accel |
+      stdbuf -oL grep orientation |
+      stdbuf -oL cut -d: -f2 |
+      stdbuf -oL sed 's/[ )]//g' |
+      xargs -I '{}' duo '{}'
+    ;;
+  *) echo "Usage: duo <top|bottom|both|set-displays|toggle|status|set-tablet-mapping|bat-limit|sync-backlight|watch-backlight|watch-rotation>"
 esac
