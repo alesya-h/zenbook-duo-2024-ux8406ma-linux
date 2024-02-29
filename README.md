@@ -1,5 +1,11 @@
 # zenbook-duo-2024-ux8406ma-linux
-automatic screen on/off (GNOME-specific), brightness sync, battery limiter
+
+Features:
+* brightness sync (any)
+* battery limiter (any)
+* automatic bottom screen on/off (GNOME-specific)
+* automatic rotation (GNOME-specific)
+
 
 ## How to use dualscreen toggle on GNOME
 
@@ -26,6 +32,11 @@ Press "Add" in the top right corner, close everything and log out and in again. 
 You also want to add `duo set-displays` to your startup so it'll set your laptop to single or dual screen when you log in.
 
 For manual screen management there are `duo top`, `duo bottom`, `duo both` and `duo toggle` (toggles between top and both) commands.
+
+
+## automatic rotation
+
+Make sure iio-sensor-proxy is installed, the script relies on `monitor-sensor` command from it. Once it's installed and you followed the steps above for dualscreen setup just run `duo watch-rotation` somewhere at the start of your GNOME session.
 
 ## brightness sync
 
