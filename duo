@@ -1,16 +1,22 @@
 #!/usr/bin/env bash
 
+
 # 3k model
 prefered_resolution="2880x1800@120.000"
+ui_scale=1.7475727796554565 # 1.75
+# y offset = height of resolution / ui_scale (1800/1.7475... = 1030), but better to check via bustle (recording session bus, you are interested in org.gnome.Mutter.DisplayConfig.ApplyMonitorsConfig call. start recording and configure display in gnome display settings)
+y_offset=1030
+backlight=card0-eDP-2-backlight
+
 # 1080p model
 #prefered_resolution="1920x1200@60.003"
-ui_scale=1.75
-# y offset = height of resolution / ui_scale (1800/1.75 = 1030)
-y_offset=1030
-# 3k model
-backlight=card0-eDP-2-backlight
-# 1080p model
 #backlight=card1-eDP-2-backlight
+#ui_scale=1
+#y_offset=1200
+
+function suenv {
+  sudo /usr/bin/env "$@"
+}
 
 case "$1" in
   set-displays)
@@ -22,23 +28,27 @@ case "$1" in
     fi
     ;;
   top)
-    gnome-monitor-config set -LpM eDP-1 -m $prefered_resolution -s $ui_scale -x 0 -y 0
+    gnome-monitor-config set \
+      -LpM eDP-1 -m $prefered_resolution  -s $ui_scale -x 0 -y 0
     ;;
   both)
-    gnome-monitor-config set -LpM eDP-1 -m $prefered_resolution -s $ui_scale -x 0 -y 0 -LM eDP-2 -m $prefered_resolution -s $ui_scale -x 0 -y $y_offset
+    gnome-monitor-config set \
+      -LpM eDP-1 -m $prefered_resolution -s $ui_scale -x 0 -y 0 \
+      -LM  eDP-2 -m $prefered_resolution -s $ui_scale -x 0 -y $y_offset
     ;;
   bottom)
-    gnome-monitor-config set -LpM eDP-2 -m $prefered_resolution -s $ui_scale -x 0 -y 0
+    gnome-monitor-config set \
+      -LpM eDP-2 -m $prefered_resolution -s $ui_scale -x 0 -y 0
     ;;
   status)
-    case `gnome-monitor-config list|grep OFF` in
+    case "$(gnome-monitor-config list|grep OFF)" in
       "Monitor [ eDP-2 ] OFF") echo top ;;
       "Monitor [ eDP-1 ] OFF") echo bottom ;;
       "") echo both ;;
     esac
     ;;
   toggle)
-    if gnome-monitor-config list|grep OFF > /dev/null; then
+    if gnome-monitor-config list | grep OFF > /dev/null; then
       "$0" both
     else
       "$0" top
@@ -46,15 +56,18 @@ case "$1" in
     ;;
   set-tablet-mapping)
     for type in tablets touchscreens; do
-      dconf write /org/gnome/desktop/peripherals/${type}/04f3:425b/output "['SDC', '0x419d', '0x00000000', 'eDP-1']"
-      dconf write /org/gnome/desktop/peripherals/${type}/04f3:425a/output "['SDC', '0x419d', '0x00000000', 'eDP-2']"
+      dconf write "/org/gnome/desktop/peripherals/${type}/04f3:425b/output" \
+        "['SDC', '0x419d', '0x00000000', 'eDP-1']"
+      dconf write "/org/gnome/desktop/peripherals/${type}/04f3:425a/output" \
+        "['SDC', '0x419d', '0x00000000', 'eDP-2']"
     done
     ;;
   bat-limit)
-    echo ${2:-80} | sudo /usr/bin/env tee /sys/class/power_supply/BAT0/charge_control_end_threshold
+    echo "${2:-80}" | suenv tee /sys/class/power_supply/BAT0/charge_control_end_threshold
     ;;
   sync-backlight)
-    cat /sys/class/backlight/intel_backlight/brightness |sudo /usr/bin/env tee /sys/class/backlight/$backlight/brightness
+    cat "/sys/class/backlight/intel_backlight/brightness" |
+      suenv tee /sys/class/backlight/$backlight/brightness
     ;;
   watch-backlight)
     "$0" sync-backlight
