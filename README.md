@@ -3,11 +3,15 @@
 Features:
 * brightness sync (any)
 * battery limiter (any)
+* touch/pen panels mapping (GNOME-specific, requires GNOME 46 or a backported Mutter patch)
 * automatic bottom screen on/off (GNOME-specific)
 * automatic rotation (GNOME-specific)
 
+## panel mapping
 
-## How to use dualscreen toggle on GNOME
+`duo set-tablet-mapping` will set necessary dconf settings, but for them to work you need a Mutter with a patch from https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3556 and libwacom with this patch https://github.com/linuxwacom/libwacom/pull/640 . Both are merged upstream, so you can just wait.
+
+## bottom screen toggle on GNOME
 
 Install https://github.com/jadahl/gnome-monitor-config. I packaged it for NixOS already, see https://github.com/NixOS/nixpkgs/pull/290444.
 
