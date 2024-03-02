@@ -21,7 +21,15 @@ Required available commands:
 
 ## bottom screen toggle on GNOME
 
+### Requirements
+
 Install https://github.com/jadahl/gnome-monitor-config. I packaged it for NixOS already, see https://github.com/NixOS/nixpkgs/pull/290444.
+
+### Automatic Setup
+
+Run `duo keyboard-setup` to trigger `duo set-displays` to run on keyboard added/removed event (requires `duo` in `PATH`, see [automated setup](#automated-setup--background-services))
+
+### Manual Setup
 
 Since WLAN button code is used for keyboard attach/detach events first we need to disable it. Open dconf-editor and edit the key /org/gnome/settings-daemon/plugins/media-keys/rfkill-static and remove XF86WLAN from the list:
 
@@ -68,7 +76,7 @@ Brightness control requires root permissions. I prefer to have sudo with a passw
   };
 ```
 
-Once the sudo setup is done you can either run `duo sync-backlight` to sync it once (you may want to bind it to some hotkey) or you can run `duo watch-backlight` at login and it will keep syncing your brightness from the top display to the bottom one.
+Once the sudo setup is done you can either run `duo sync-backlight` to sync it once (you may want to bind it to some hotkey) or you can run `duo watch-backlight` at login (see [automated setup](#automated-setup--background-services)) and it will keep syncing your brightness from the top display to the bottom one.
 
 ## battery limiter
 
@@ -76,9 +84,7 @@ Requires same sudo setup as for the brightness sync. Most likely you want to run
 
 ## Automated Setup & Background Services
 
-There is an `install.sh` file that will:
+There is an `install.sh` (run with `sudo ./install.sh`) file that will:
 
 - install the `duo` script and `gnome-monitor-config` to `/usr/local/bin`
 - run and enable background service for syncing backlight
--
-- add keyboard shortcut for setting the correct display settings when keyboard is attached/detached

@@ -80,6 +80,13 @@ set-tablet-mapping)
       "['SDC', '0x419d', '0x00000000', 'eDP-2']"
   done
   ;;
+keyboard-setup)
+  gsettings set org.gnome.settings-daemon.plugins.media-keys rfkill-static "['XF86UWB', 'XF86RFKill']"
+  gsettings set org.gnome.settings-daemon.plugins.media-keys custom-keybindings "['/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/']"
+  gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/ name 'Duo Set Displays'
+  gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/ command 'duo set-displays'
+  gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/ binding 'WLAN'
+  ;;
 bat-limit)
   echo "${2:-80}" | suenv tee /sys/class/power_supply/BAT0/charge_control_end_threshold
   ;;
