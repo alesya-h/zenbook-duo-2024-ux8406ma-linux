@@ -1,119 +1,127 @@
 #!/usr/bin/env bash
+# Set UI Scale
+#ui_scale=1.7475727796554565 # 1.75
+ui_scale=1.5
 
+# calc res-y from the current display setting
+res_y=$(gnome-monitor-config list | grep CURRENT | cut -d '@' -f1 | cut -d'x' -f2 | uniq)
 
-# 3k model
-prefered_resolution="2880x1800@120.000"
-ui_scale=1.7475727796554565 # 1.75
 # y offset = height of resolution / ui_scale (1800/1.7475... = 1030), but better to check via bustle (recording session bus, you are interested in org.gnome.Mutter.DisplayConfig.ApplyMonitorsConfig call. start recording and configure display in gnome display settings)
-y_offset=1030
-backlight=card0-eDP-2-backlight
+y_offset=$(awk "BEGIN {print $res_y/$ui_scale}")
 
-# 1080p model
-#prefered_resolution="1920x1200@60.003"
-#backlight=card1-eDP-2-backlight
-#ui_scale=1
-#y_offset=1200
+case $res_y in
+1200)
+  # 1080p model
+  prefered_resolution="1920x1200@60.003"
+  backlight=card1-eDP-2-backlight
+  ;;
+1800)
+  # 3k model
+  prefered_resolution="2880x1800@120.000"
+  backlight=card0-eDP-2-backlight
+  ;;
+esac
 
 function suenv {
   sudo /usr/bin/env "$@"
 }
 
 function external-display-connected {
-  [ "$(gnome-monitor-config list|grep display-name|grep -v 'Built-in display'|wc -l)" != "0" ]
+  [ "$(gnome-monitor-config list | grep display-name | grep -v 'Built-in display' | wc -l)" != "0" ]
 }
 
 function active-external-displays {
-  gnome-monitor-config list|grep -vE 'eDP-[12]'|sed -nE 's/Monitor \[ (.+) \] ON/\1/p'
+  gnome-monitor-config list | grep -vE 'eDP-[12]' | sed -nE 's/Monitor \[ (.+) \] ON/\1/p'
 }
 
 case "$1" in
-  set-displays)
-    sleep 1
-    if ! external-display-connected; then 
-      "$0" normal
-    fi
-    ;;
-  normal|bottom-up)
-    if lsusb|grep 0b05:1b2c ; then
-      "$0" top
-    else
-      "$0" both
-    fi
-    ;;
-  top)
-    gnome-monitor-config set \
-      -LpM eDP-1 -m $prefered_resolution  -s $ui_scale -x 0 -y 0
-    ;;
-  both)
-    gnome-monitor-config set \
-      -LpM eDP-1 -m $prefered_resolution -s $ui_scale -x 0 -y 0 \
-      -LM  eDP-2 -m $prefered_resolution -s $ui_scale -x 0 -y $y_offset
-    ;;
-  bottom)
-    gnome-monitor-config set \
-      -LpM eDP-2 -m $prefered_resolution -s $ui_scale -x 0 -y 0
-    ;;
-  left-up)
-    gnome-monitor-config set \
-      -LpM eDP-2 -m $prefered_resolution -s $ui_scale -t left  -x 0         -y 0 \
-      -LM  eDP-1 -m $prefered_resolution -s $ui_scale -t left  -x $y_offset -y 0
-    ;;
-  right-up)
-    gnome-monitor-config set \
-      -LM  eDP-1 -m $prefered_resolution -s $ui_scale -t right -x 0         -y 0 \
-      -LpM eDP-2 -m $prefered_resolution -s $ui_scale -t right -x $y_offset -y 0
-    ;;
-  status-internal)
-    internal_monitors="$(gnome-monitor-config list|grep -E "Monitor \\[ eDP-. \\] ON")"
-    case "$(echo "$internal_monitors"|grep -v -E "^$"|wc -l)" in
-      0) echo "none" ;;
-      1) case "$(echo "$internal_monitors"|grep ON)" in
-           "Monitor [ eDP-1 ] ON") echo top ;;
-           "Monitor [ eDP-2 ] ON") echo bottom ;;
-         esac ;;
-      2) echo "both" ;;
-    esac
-    ;;
-  status)
-    (
-      active-external-displays
-    )|grep -vE "^$"|sed -z "s/\n/+/g"
-    "$0" status-internal
-    ;;
-  toggle)
-    if gnome-monitor-config list | grep OFF > /dev/null; then
-      "$0" both
-    else
-      "$0" top
-    fi
-    ;;
-  set-tablet-mapping)
-    for type in tablets touchscreens; do
-      dconf write "/org/gnome/desktop/peripherals/${type}/04f3:425b/output" \
-        "['SDC', '0x419d', '0x00000000', 'eDP-1']"
-      dconf write "/org/gnome/desktop/peripherals/${type}/04f3:425a/output" \
-        "['SDC', '0x419d', '0x00000000', 'eDP-2']"
-    done
-    ;;
-  bat-limit)
-    echo "${2:-80}" | suenv tee /sys/class/power_supply/BAT0/charge_control_end_threshold
-    ;;
-  sync-backlight)
-    cat "/sys/class/backlight/intel_backlight/brightness" |
-      suenv tee /sys/class/backlight/$backlight/brightness
-    ;;
-  watch-backlight)
+set-displays)
+  sleep 1
+  if ! external-display-connected; then
+    "$0" normal
+  fi
+  ;;
+normal | bottom-up)
+  if lsusb | grep 0b05:1b2c; then
+    "$0" top
+  else
+    "$0" both
+  fi
+  ;;
+top)
+  gnome-monitor-config set \
+    -LpM eDP-1 -m $prefered_resolution -s $ui_scale -x 0 -y 0
+  ;;
+both)
+  gnome-monitor-config set \
+    -LpM eDP-1 -m $prefered_resolution -s $ui_scale -x 0 -y 0 \
+    -LM eDP-2 -m $prefered_resolution -s $ui_scale -x 0 -y $y_offset
+  ;;
+bottom)
+  gnome-monitor-config set \
+    -LpM eDP-2 -m $prefered_resolution -s $ui_scale -x 0 -y 0
+  ;;
+left-up)
+  gnome-monitor-config set \
+    -LpM eDP-2 -m $prefered_resolution -s $ui_scale -t left -x 0 -y 0 \
+    -LM eDP-1 -m $prefered_resolution -s $ui_scale -t left -x $y_offset -y 0
+  ;;
+right-up)
+  gnome-monitor-config set \
+    -LM eDP-1 -m $prefered_resolution -s $ui_scale -t right -x 0 -y 0 \
+    -LpM eDP-2 -m $prefered_resolution -s $ui_scale -t right -x $y_offset -y 0
+  ;;
+status-internal)
+  internal_monitors="$(gnome-monitor-config list | grep -E "Monitor \\[ eDP-. \\] ON")"
+  case "$(echo "$internal_monitors" | grep -v -E "^$" | wc -l)" in
+  0) echo "none" ;;
+  1) case "$(echo "$internal_monitors" | grep ON)" in
+  "Monitor [ eDP-1 ] ON") echo top ;;
+  "Monitor [ eDP-2 ] ON") echo bottom ;;
+  esac ;;
+  2) echo "both" ;;
+  esac
+  ;;
+status)
+  (
+    active-external-displays
+  ) | grep -vE "^$" | sed -z "s/\n/+/g"
+  "$0" status-internal
+  ;;
+toggle)
+  if gnome-monitor-config list | grep OFF >/dev/null; then
+    "$0" both
+  else
+    "$0" top
+  fi
+  ;;
+set-tablet-mapping)
+  for type in tablets touchscreens; do
+    dconf write "/org/gnome/desktop/peripherals/${type}/04f3:425b/output" \
+      "['SDC', '0x419d', '0x00000000', 'eDP-1']"
+    dconf write "/org/gnome/desktop/peripherals/${type}/04f3:425a/output" \
+      "['SDC', '0x419d', '0x00000000', 'eDP-2']"
+  done
+  ;;
+bat-limit)
+  echo "${2:-80}" | suenv tee /sys/class/power_supply/BAT0/charge_control_end_threshold
+  ;;
+sync-backlight)
+  cat "/sys/class/backlight/intel_backlight/brightness" |
+    suenv tee /sys/class/backlight/$backlight/brightness
+  ;;
+watch-backlight)
+  "$0" sync-backlight
+  while inotifywait -e modify /sys/class/backlight/intel_backlight/brightness; do
     "$0" sync-backlight
-    while inotifywait -e modify /sys/class/backlight/intel_backlight/brightness ; do
-      "$0" sync-backlight
-    done
-    ;;
-  watch-rotation)
-    monitor-sensor --accel |
-      stdbuf -oL grep orientation |
-      stdbuf -oL cut -d: -f2 |
-      stdbuf -oL sed 's/[ )]//g' |
-      xargs -I '{}' duo '{}'
-    ;;
-  *) echo "Usage: duo <top|bottom|both|set-displays|toggle|status|set-tablet-mapping|bat-limit|sync-backlight|watch-backlight|watch-rotation>"
+  done
+  ;;
+watch-rotation)
+  monitor-sensor --accel |
+    stdbuf -oL grep orientation |
+    stdbuf -oL cut -d: -f2 |
+    stdbuf -oL sed 's/[ )]//g' |
+    xargs -I '{}' duo '{}'
+  ;;
+*) echo "Usage: duo <top|bottom|both|set-displays|toggle|status|set-tablet-mapping|bat-limit|sync-backlight|watch-backlight|watch-rotation>" ;;
 esac
