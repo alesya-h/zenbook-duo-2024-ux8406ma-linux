@@ -1,11 +1,19 @@
 # zenbook-duo-2024-ux8406ma-linux
 
 Features:
-* brightness sync (any)
-* battery limiter (any)
-* touch/pen panels mapping (GNOME-specific, requires GNOME 46 or a backported Mutter patch)
-* automatic bottom screen on/off (GNOME-specific)
-* automatic rotation (GNOME-specific)
+
+- brightness sync (any)
+- battery limiter (any)
+- touch/pen panels mapping (GNOME-specific, requires GNOME 46 or a backported Mutter patch)
+- automatic bottom screen on/off (GNOME-specific)
+- automatic rotation (GNOME-specific)
+  lsusb
+
+Required available commands:
+
+- `lsusb` (for `duo set-displays`)
+- `monitor-sensor` (for `duo watch-rotation`)
+- `python` and `pip` (for dbus monitoring)
 
 ## panel mapping
 
@@ -25,9 +33,9 @@ Before the next steps, you may need or want to change the scaling settings or ch
 
 After that go to Settings -> Keyboard -> (at the bottom) Keyboard Shortcuts -> View and Customize Shortcuts -> Custom Shortcuts and press +.
 
-* Name: "toggle dualscreen mode" or anything else.
-* Command: `/absolute/path/to/this/repo/duo set-displays`.
-* Shortcut: press "Set Shortcut..." and attach or detach the keyboard (doesn't matter, it sends the same event).
+- Name: "toggle dualscreen mode" or anything else.
+- Command: `/absolute/path/to/this/repo/duo set-displays`.
+- Shortcut: press "Set Shortcut..." and attach or detach the keyboard (doesn't matter, it sends the same event).
 
 <img src="https://github.com/alesya-h/zenbook-duo-2024-ux8406ma-linux/assets/209175/54d08da6-cba2-49a8-abcf-9eadcd5869d2" width="50%" height="50%">
 
@@ -37,14 +45,13 @@ You also want to add `duo set-displays` to your startup so it'll set your laptop
 
 For manual screen management there are `duo top`, `duo bottom`, `duo both` and `duo toggle` (toggles between top and both) commands.
 
-
 ## automatic rotation
 
 Make sure iio-sensor-proxy is installed, the script relies on `monitor-sensor` command from it. Once it's installed and you followed the steps above for dualscreen setup just run `duo watch-rotation` somewhere at the start of your GNOME session.
 
 ## brightness sync
 
-Brightness control requires root permissions. I prefer to have sudo with a password by default, so I use a hack to have a NOPASSWD sudo for /usr/bin/env which allows to execute any command. Line in /etc/sudoers looks like `%wheel  ALL=(ALL:ALL)    NOPASSWD: /usr/bin/env`. On NixOS the relevant part of the config is this:
+Brightness control requires root permissions. I prefer to have sudo with a password by default, so I use a hack to have a NOPASSWD sudo for /usr/bin/env which allows to execute any command. Line in /etc/sudoers looks like `%wheel ALL=(ALL:ALL) NOPASSWD: /usr/bin/env`. On NixOS the relevant part of the config is this:
 
 ```
   security.sudo = {
@@ -63,8 +70,15 @@ Brightness control requires root permissions. I prefer to have sudo with a passw
 
 Once the sudo setup is done you can either run `duo sync-backlight` to sync it once (you may want to bind it to some hotkey) or you can run `duo watch-backlight` at login and it will keep syncing your brightness from the top display to the bottom one.
 
-For most linux distros there is an included systemd service file: `brightness-sync.service` that just needs `/path/to/duo` changed before moving it to `/etc/systemd/system` to enable brightness sync in the background.
-
 ## battery limiter
 
 Requires same sudo setup as for the brightness sync. Most likely you want to run `duo bat-limit` or `duo bat-limit 75` (where 75 is your desired threshold percentage, 80 is used if omited) once at the start of your desktop session.
+
+## Automated Setup & Background Services
+
+There is an `install.sh` file that will:
+
+- install the `duo` script and `gnome-monitor-config` to `/usr/local/bin`
+- run and enable background service for syncing backlight
+-
+- add keyboard shortcut for setting the correct display settings when keyboard is attached/detached
