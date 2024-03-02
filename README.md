@@ -85,7 +85,7 @@ If [automated setup](#automated-setup--background-services) is used, then it wil
 
 ## Automated Setup & Background Services
 
-There is an `install.sh` (run with `sudo ./install.sh`) file that will:
+There is an `install.sh` (meant to be run with root permissions. **ALWAYS read and understand any script from the internet before running it!!!**) file that will:
 
 - install the `duo` script and `gnome-monitor-config` to `/usr/local/bin`
 - run and enable background service for syncing backlight
