@@ -87,6 +87,6 @@ If [automated setup](#automated-setup--background-services) is used, then it wil
 
 There is an `install.sh` (meant to be run with root permissions. **ALWAYS read and understand any script from the internet before running it!!!**) file that will:
 
-- install the `duo` script and `gnome-monitor-config` to `/usr/local/bin`
+- install the `duo` script and [gnome-monitor-config](https://github.com/jadahl/gnome-monitor-config) to `/usr/local/bin`
 - run and enable background service for syncing backlight
 - run and enable background service for setting any battery limit on boot
