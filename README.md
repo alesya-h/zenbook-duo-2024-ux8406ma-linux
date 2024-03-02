@@ -13,7 +13,6 @@ Required available commands:
 
 - `lsusb` (for `duo set-displays`)
 - `monitor-sensor` (for `duo watch-rotation`)
-- `python` and `pip` (for dbus monitoring)
 
 ## panel mapping
 
@@ -82,9 +81,12 @@ Once the sudo setup is done you can either run `duo sync-backlight` to sync it o
 
 Requires same sudo setup as for the brightness sync. Most likely you want to run `duo bat-limit` or `duo bat-limit 75` (where 75 is your desired threshold percentage, 80 is used if omited) once at the start of your desktop session.
 
+If [automated setup](#automated-setup--background-services) is used, then it will run at boot to set battery to previously set limit.
+
 ## Automated Setup & Background Services
 
 There is an `install.sh` (run with `sudo ./install.sh`) file that will:
 
 - install the `duo` script and `gnome-monitor-config` to `/usr/local/bin`
 - run and enable background service for syncing backlight
+- run and enable background service for setting any battery limit on boot
