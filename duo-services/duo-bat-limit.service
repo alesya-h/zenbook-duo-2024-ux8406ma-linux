@@ -1,0 +1,10 @@
+[Unit]
+Description=Battery Limit Application if Exists
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/duo apply-set-bat-limit
+
+[Install]
+WantedBy=default.target

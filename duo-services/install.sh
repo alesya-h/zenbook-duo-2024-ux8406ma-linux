@@ -9,6 +9,7 @@ echo "Cleaning any old install"
 rm -rf /usr/local/$package_name
 # remove services
 rm -rf /etc/systemd/system/duo-brightness-sync.service
+rm -rf /etc/systemd/system/duo-bat-limit.service
 # remove links
 rm -rf /usr/local/bin/gnome-monitor-config
 rm -rf /usr/local/bin/duo
@@ -45,7 +46,11 @@ ln -s /usr/local/$package_name/duo /usr/local/bin/duo
 echo "Setting up Services"
 cd $startdir
 cp duo-brightness-sync.service /etc/systemd/system/duo-brightness-sync.service
+cp duo-bat-limit.service /etc/systemd/system/duo-bat-limit.service
 
 # start service
 systemctl daemon-reload
 systemctl enable --now duo-brightness-sync
+systemctl enable --now duo-bat-limit
+
+chmod a+wx /usr/local/$package_name
