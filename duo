@@ -18,9 +18,18 @@ function suenv {
   sudo /usr/bin/env "$@"
 }
 
+function external-display-connected {
+  [ "$(gnome-monitor-config list|grep display-name|grep -v 'Built-in display'|wc -l)" != "0" ]
+}
+
 case "$1" in
-  set-displays|normal|bottom-up)
+  set-displays)
     sleep 1
+    if ! external-display-connected; then 
+      "$@" normal
+    fi
+    ;;
+  normal|bottom-up)
     if lsusb|grep 0b05:1b2c ; then
       "$0" top
     else
@@ -54,7 +63,7 @@ case "$1" in
     case "$(gnome-monitor-config list|grep OFF)" in
       "Monitor [ eDP-2 ] OFF") echo top ;;
       "Monitor [ eDP-1 ] OFF") echo bottom ;;
-      "") echo both ;;
+      *) echo both ;;
     esac
     ;;
   toggle)
