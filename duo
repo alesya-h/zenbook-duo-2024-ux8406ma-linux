@@ -22,11 +22,15 @@ function external-display-connected {
   [ "$(gnome-monitor-config list|grep display-name|grep -v 'Built-in display'|wc -l)" != "0" ]
 }
 
+function active-external-displays {
+  gnome-monitor-config list|grep -vE 'eDP-[12]'|sed -nE 's/Monitor \[ (.+) \] ON/\1/p'
+}
+
 case "$1" in
   set-displays)
     sleep 1
     if ! external-display-connected; then 
-      "$@" normal
+      "$0" normal
     fi
     ;;
   normal|bottom-up)
@@ -59,12 +63,22 @@ case "$1" in
       -LM  eDP-1 -m $prefered_resolution -s $ui_scale -t right -x 0         -y 0 \
       -LpM eDP-2 -m $prefered_resolution -s $ui_scale -t right -x $y_offset -y 0
     ;;
-  status)
-    case "$(gnome-monitor-config list|grep OFF)" in
-      "Monitor [ eDP-2 ] OFF") echo top ;;
-      "Monitor [ eDP-1 ] OFF") echo bottom ;;
-      *) echo both ;;
+  status-internal)
+    internal_monitors="$(gnome-monitor-config list|grep -E "Monitor \\[ eDP-. \\] ON")"
+    case "$(echo "$internal_monitors"|grep -v -E "^$"|wc -l)" in
+      0) echo "none" ;;
+      1) case "$(echo "$internal_monitors"|grep ON)" in
+           "Monitor [ eDP-1 ] ON") echo top ;;
+           "Monitor [ eDP-2 ] ON") echo bottom ;;
+         esac ;;
+      2) echo "both" ;;
     esac
+    ;;
+  status)
+    (
+      active-external-displays
+    )|grep -vE "^$"|sed -z "s/\n/+/g"
+    "$0" status-internal
     ;;
   toggle)
     if gnome-monitor-config list | grep OFF > /dev/null; then
