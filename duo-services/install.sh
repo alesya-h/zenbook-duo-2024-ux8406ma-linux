@@ -54,3 +54,5 @@ systemctl enable --now duo-brightness-sync
 systemctl enable --now duo-bat-limit
 
 chmod a+wx /usr/local/$package_name
+
+echo "Run \"duo set-displays\" to set needed files for brightness sync and wakeup service to work"

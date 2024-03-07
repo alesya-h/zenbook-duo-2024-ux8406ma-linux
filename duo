@@ -1,12 +1,20 @@
 #!/usr/bin/env bash
-
 function get-model-conf {
   # Set UI Scale
   #ui_scale=1.7475727796554565 # 1.75
   ui_scale=1.5
 
-  # calc res-y from the current display setting
-  res_y=$(gnome-monitor-config list | grep CURRENT | cut -d '@' -f1 | cut -d'x' -f2 | uniq)
+  # if res_y is saved then use that
+  if test -f $script_dir/res_y; then
+    res_y=$(cat $script_dir/res_y)
+  fi
+  # if var is set
+  if [ -z "$res_y" ]; then
+    # calc res-y from the current display setting
+    res_y=$(gnome-monitor-config list | grep CURRENT | cut -d '@' -f1 | cut -d'x' -f2 | uniq)
+    # save to file
+    echo -n "$res_y" >$script_dir/res_y
+  fi
 
   # y offset = height of resolution / ui_scale (1800/1.7475... = 1030), but better to check via bustle (recording session bus, you are interested in org.gnome.Mutter.DisplayConfig.ApplyMonitorsConfig call. start recording and configure display in gnome display settings)
   y_offset=$(awk "BEGIN {print $res_y/$ui_scale}")
@@ -109,6 +117,7 @@ bat-limit)
   echo "${2:-80}" >$script_dir/bat-limit
   ;;
 sync-backlight)
+  get-model-conf
   cat "/sys/class/backlight/intel_backlight/brightness" |
     suenv tee /sys/class/backlight/$backlight/brightness
   ;;
