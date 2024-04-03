@@ -68,3 +68,12 @@ For most linux distros there is an included systemd service file: `brightness-sy
 ## battery limiter
 
 Requires same sudo setup as for the brightness sync. Most likely you want to run `duo bat-limit` or `duo bat-limit 75` (where 75 is your desired threshold percentage, 80 is used if omited) once at the start of your desktop session.
+
+## Notes concerning usage on Fedora 40
+
+The steps described above work on Fedora 40 with the following specific changes:
+Prerequisities:
+`sudo dnf install lm_sensors gnome-monitor-config inotofy-tools`
+Libwacom files elan-425a.tablet and elan-425b.tablet should be copied to /usr/share/libwacom
+For brightness sync to work properly, line 10 of the duo.sh should be modified to `backlight=card1-eDP-2-backlight`
+
