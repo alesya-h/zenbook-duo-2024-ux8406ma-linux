@@ -113,7 +113,7 @@ case "$1" in
       stdbuf -oL grep orientation |
       stdbuf -oL cut -d: -f2 |
       stdbuf -oL sed 's/[ )]//g' |
-      xargs -I '{}' duo '{}'
+      xargs -I '{}' stdbuf -oL "$0" '{}'
     ;;
   *) echo "Usage: duo <top|bottom|both|set-displays|toggle|status|set-tablet-mapping|bat-limit|sync-backlight|watch-backlight|watch-rotation>"
 esac
