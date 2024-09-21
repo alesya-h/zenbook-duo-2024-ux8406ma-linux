@@ -115,5 +115,43 @@ case "$1" in
       stdbuf -oL sed 's/[ )]//g' |
       xargs -I '{}' duo '{}'
     ;;
+  watch-screens)
+    orientation="normal"
+    screens="top"
+    keyboard=true
+    "$0" $orientation
+    "$0" $screens
+    #"$0" bat-limit
+    #"$0" set-tablet-mapping
+    while true; do
+      if lsusb | grep -q "ASUS Zenbook Duo Keyboard"; then
+        if [[ "$keyboard" == false ]]; then
+          keyboard=true
+          echo "Keyboard found!"
+        fi
+        if [[ "$screens" == "both" ]]; then
+          screens="top"
+          "$0" $screens
+        fi
+      else
+        # If not found, set the variable keyboard to false
+        if [[ "$keyboard" == true ]]; then
+          keyboard=false
+          echo "Keyboard lost!"
+        fi
+        if [[ "$screens" == "top" ]]; then
+          screens="both"
+          "$0" $screens
+        fi
+      fi
+      neworientation=$(gdbus call --system --dest net.hadess.SensorProxy --object-path /net/hadess/SensorProxy --method org.freedesktop.DBus.Properties.Get net.hadess.SensorProxy AccelerometerOrientation |  sed "s/.*<'\([^']*\)'>.*/\1/")
+      echo "keyboard:" $keyboard " screens:" $screens " orientation:" $orientation
+      if [[ "$orientation" != "$neworientation" && "$keyboard" == false ]]; then
+        orientation="$neworientation"
+        "$0" $orientation 
+      fi
+      sleep 0.25
+    done
+    ;;
   *) echo "Usage: duo <top|bottom|both|set-displays|toggle|status|set-tablet-mapping|bat-limit|sync-backlight|watch-backlight|watch-rotation>"
 esac

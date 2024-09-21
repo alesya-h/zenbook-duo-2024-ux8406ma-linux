@@ -1,6 +1,6 @@
 [Desktop Entry]
 Type=Application
-Exec=/usr/bin/env /change/this/path/to/duo watch-screen
+Exec=/usr/bin/env /change/this/path/to/duo watch-screens
 Hidden=false
 NoDisplay=false
 X-GNOME-Autostart-enabled=true
