@@ -5,7 +5,7 @@ StartLimitIntervalSec=0[Service]
 Type=simple
 Restart=always
 RestartSec=1
-ExecStart=/change/this/path/to/duo watch-backlight
+ExecStart=/usr/bin/env /change/this/path/to/duo watch-backlight
 
 [Install]
 WantedBy=multi-user.target
