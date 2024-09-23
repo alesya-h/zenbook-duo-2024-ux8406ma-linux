@@ -145,7 +145,7 @@ case "$1" in
         fi
       fi
       neworientation=$(gdbus call --system --dest net.hadess.SensorProxy --object-path /net/hadess/SensorProxy --method org.freedesktop.DBus.Properties.Get net.hadess.SensorProxy AccelerometerOrientation |  sed "s/.*<'\([^']*\)'>.*/\1/")
-      echo "keyboard:" $keyboard " screens:" $screens " orientation:" $orientation
+      # echo "keyboard:" $keyboard " screens:" $screens " orientation:" $orientation
       if [[ "$orientation" != "$neworientation" && "$keyboard" == false ]]; then
         orientation="$neworientation"
         "$0" $orientation 
