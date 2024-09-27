@@ -77,7 +77,7 @@ In additional, the script requires [libusb](https://packages.debian.org/sid/libu
 
 The backlight controls is written in C so it first needs to compiled by:
 `gcc keyboard_backlight.c -o keyboard_backlight -lusb-1.0`.\
-Ffter that, you can move `keyboard_backlight` to `usr/local/bin/` and simply do: `keyboard_backlight off|low|mid|high`\
+After that, you can move `keyboard_backlight` to `usr/local/bin/` and simply do: `keyboard_backlight off|low|mid|high`\
 
 If keyboard_backlight script is added to PATH, you can also use duo key-light `off|low|mid|high`
 
