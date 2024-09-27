@@ -6,6 +6,7 @@ Features:
 * touch/pen panels mapping (GNOME-specific, requires GNOME 46 or a backported Mutter patch)
 * automatic bottom screen on/off (GNOME-specific)
 * automatic rotation (GNOME-specific)
+* Keyboard backlight controls
 
 ## panel mapping
 
@@ -68,6 +69,19 @@ For most linux distros there is an included systemd service file: `brightness-sy
 ## battery limiter
 
 Requires same sudo setup as for the brightness sync. Most likely you want to run `duo bat-limit` or `duo bat-limit 75` (where 75 is your desired threshold percentage, 80 is used if omited) once at the start of your desktop session.
+
+## keyboard backligh controls
+
+Keyboard backlight controls also require sudo priviledges to run.
+In additional, the script requires [libusb](https://packages.debian.org/sid/libusb-1.0-0-dev) which allows to send a data packets to the usb keyboard.
+
+The backlight controls is written in C so it first needs to compiled by:
+`gcc keyboard_backlight.c -o keyboard_backlight -lusb-1.0`.\
+Ffter that, you can move `keyboard_backlight` to `usr/local/bin/` and simply do: `keyboard_backlight off|low|mid|high`\
+
+If keyboard_backlight script is added to PATH, you can also use duo key-light `off|low|mid|high`
+
+Currently, this only works when the keyboard is attached to the laptop.
 
 ## Notes concerning usage on Fedora 40
 

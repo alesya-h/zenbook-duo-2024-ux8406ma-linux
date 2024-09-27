@@ -29,7 +29,7 @@ function active-external-displays {
 case "$1" in
   set-displays)
     sleep 1
-    if ! external-display-connected; then 
+    if ! external-display-connected; then
       "$0" normal
     fi
     ;;
@@ -115,5 +115,8 @@ case "$1" in
       stdbuf -oL sed 's/[ )]//g' |
       xargs -I '{}' duo '{}'
     ;;
-  *) echo "Usage: duo <top|bottom|both|set-displays|toggle|status|set-tablet-mapping|bat-limit|sync-backlight|watch-backlight|watch-rotation>"
+  key-light)
+    keyboard_backlight "$2"
+    ;;
+  *) echo "Usage: duo <top|bottom|both|set-displays|toggle|status|set-tablet-mapping|bat-limit|sync-backlight|watch-backlight|watch-rotation|key-light <off|low|mid|high>>"
 esac
