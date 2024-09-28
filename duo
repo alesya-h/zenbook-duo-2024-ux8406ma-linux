@@ -113,7 +113,7 @@ case "$1" in
       stdbuf -oL grep orientation |
       stdbuf -oL cut -d: -f2 |
       stdbuf -oL sed 's/[ )]//g' |
-      xargs -I '{}' duo '{}'
+      xargs -I '{}' stdbuf -oL "$0" '{}'
     ;;
   key-light)
     keyboard_backlight "$2"
