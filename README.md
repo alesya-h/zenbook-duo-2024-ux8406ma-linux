@@ -11,6 +11,10 @@ Features:
 
 `duo set-tablet-mapping` will set necessary dconf settings, but for them to work you need a Mutter with a patch from https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3556 and libwacom with this patch https://github.com/linuxwacom/libwacom/pull/640 . Both are merged upstream, so you can just wait.
 
+## watch screens startup application
+
+On most linux distros you can copy watch-screens.desktop that just needs `/path/to/duo` changed before moving it to `~/.config/autostart` to enable automatic keyboard detection and screen orientation in the background.  Be sure to `chmod +x watch-screens.desktop` then log out and back on.
+
 ## bottom screen toggle on GNOME
 
 Install https://github.com/jadahl/gnome-monitor-config. I packaged it for NixOS already, see https://github.com/NixOS/nixpkgs/pull/290444.
