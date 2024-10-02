@@ -27,6 +27,13 @@ function active-external-displays {
 }
 
 case "$1" in
+  watch-displays)
+    while inotifywait -e attrib /dev/bus/usb/001/ ; do
+      if ! external-display-connected; then
+        "$0" normal
+      fi
+    done
+    ;;
   set-displays)
     sleep 1
     if ! external-display-connected; then 
@@ -123,5 +130,5 @@ case "$1" in
       stdbuf -oL sed 's/[ )]//g' |
       xargs -I '{}' stdbuf -oL "$0" '{}'
     ;;
-  *) echo "Usage: duo <top|bottom|both|set-displays|toggle|status|set-tablet-mapping|bat-limit|sync-backlight|watch-backlight|watch-rotation>"
+  *) echo "Usage: duo <top|bottom|both|set-displays|toggle|status|set-tablet-mapping|bat-limit|sync-backlight|watch-backlight|watch-rotation|watch-displays>"
 esac
