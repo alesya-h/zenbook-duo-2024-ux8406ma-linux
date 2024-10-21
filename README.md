@@ -13,7 +13,7 @@ Features:
 
 ## bottom screen toggle on GNOME
 
-Make sure gnome-monitor, usbutils and inotify-tools are installed, the script relies on the `gnome-monitor-config`, `lsusb` and `inotifywait` commands from them.
+Make sure gnome-monitor-config, usbutils and inotify-tools are installed, the script relies on the `gnome-monitor-config`, `lsusb` and `inotifywait` commands from them.
 
 Before the next steps, you may need or want to change the scaling settings or change the config at the top of `duo` based on the version of the duo that you have (1080p vs 3k display models)
 
