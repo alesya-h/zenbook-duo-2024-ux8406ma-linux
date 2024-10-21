@@ -81,7 +81,7 @@ case "$1" in
     "$0" status-internal
     ;;
   toggle)
-    if gnome-monitor-config list | grep OFF > /dev/null; then
+    if gnome-monitor-config list | grep OFF | grep eDP > /dev/null; then
       "$0" both
     else
       "$0" top
