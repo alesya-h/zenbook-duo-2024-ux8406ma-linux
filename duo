@@ -95,6 +95,14 @@ case "$1" in
         "['SDC', '0x419d', '0x00000000', 'eDP-2']"
     done
     ;;
+  toggle-bottom-touch)
+    path="/org/gnome/desktop/peripherals/touchscreens/04f3:425a/output"
+    if [ -z "$(dconf read "$path")" ]; then
+      dconf write "$path" "['SDC', '0x419d', '0x00000000', 'eDP-2']"
+    else
+      dconf reset "$path"
+    fi
+    ;;
   bat-limit)
     echo "${2:-80}" | suenv tee /sys/class/power_supply/BAT0/charge_control_end_threshold
     ;;

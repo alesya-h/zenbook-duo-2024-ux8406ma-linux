@@ -37,6 +37,7 @@ You also want to add `duo set-displays` to your startup so it'll set your laptop
 
 For manual screen management there are `duo top`, `duo bottom`, `duo both` and `duo toggle` (toggles between top and both) commands.
 
+In addition there's also `duo toggle-bottom-touch` to toggle touch for the bottom screen, so you can draw with a pen while resting your hand on the screen.
 
 ## automatic rotation
 
