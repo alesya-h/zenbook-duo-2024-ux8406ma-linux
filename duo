@@ -117,6 +117,9 @@ case "$1" in
     cat "/sys/class/backlight/intel_backlight/brightness" |
       suenv tee /sys/class/backlight/$backlight/brightness
     ;;
+  set-kb-backlight)
+    suenv python3 bk.py "$2"
+    ;;
   watch-backlight)
     "$0" sync-backlight
     while inotifywait -e modify /sys/class/backlight/intel_backlight/brightness ; do
@@ -130,5 +133,5 @@ case "$1" in
       stdbuf -oL sed 's/[ )]//g' |
       xargs -I '{}' stdbuf -oL "$0" '{}'
     ;;
-  *) echo "Usage: duo <top|bottom|both|set-displays|toggle|status|set-tablet-mapping|bat-limit|sync-backlight|watch-backlight|watch-rotation|watch-displays>"
+  *) echo "Usage: duo <top|bottom|both|set-displays|toggle|status|set-tablet-mapping|bat-limit|sync-backlight|set-kb-backlight|watch-backlight|watch-rotation|watch-displays>"
 esac
