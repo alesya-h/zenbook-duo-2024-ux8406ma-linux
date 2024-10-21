@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+cd "$(dirname "$(realpath "$0")")"
 
 # 3k model
 prefered_resolution="2880x1800@120.000"
