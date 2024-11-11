@@ -31,7 +31,8 @@ case "$1" in
   watch-displays)
     while inotifywait -e attrib /dev/bus/usb/*/ ; do
       if ! external-display-connected; then
-        "$0" normal
+        orientation=$(gdbus call --system --dest net.hadess.SensorProxy --object-path /net/hadess/SensorProxy --method org.freedesktop.DBus.Properties.Get net.hadess.SensorProxy AccelerometerOrientation | sed "s/.*<'\([^']*\)'>.*/\1/")
+        "$0" $orientation
       fi
     done
     ;;
