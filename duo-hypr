@@ -1,0 +1,215 @@
+#!/usr/bin/env bash
+
+cd "$(dirname "$(realpath "$0")")"
+
+# Configuration
+preferred_resolution="1920x1200@60"
+ui_scale=1.07
+vrr=1
+backlight="card1-eDP-2-backlight"
+KEYBOARD_USB_ID="0b05:1b2c"
+mpvpaper=1
+
+# Helper: run command with sudo
+function suenv {
+  sudo /usr/bin/env "$@"
+}
+
+# Helper: check if keyboard is attached via USB
+function keyboard-is-attached {
+  lsusb | grep -q "$KEYBOARD_USB_ID"
+}
+
+# Helper: get current orientation from accelerometer
+function get-orientation {
+  gdbus call --system \
+    --dest net.hadess.SensorProxy \
+    --object-path /net/hadess/SensorProxy \
+    --method org.freedesktop.DBus.Properties.Get \
+    net.hadess.SensorProxy AccelerometerOrientation \
+    | sed "s/.*<'\([^']*\)'>.*/\1/"
+}
+
+# Helper: check if external (non-eDP) display is connected
+function external-display-connected {
+  hyprctl -j monitors | jq -e '[.[] | select(.name | startswith("eDP") | not)] | length > 0' >/dev/null 2>&1
+}
+
+# Helper: get current internal display status
+function get-internal-status {
+  local monitors
+  monitors=$(hyprctl -j monitors)
+  local edp1_active edp2_active
+  edp1_active=$(echo "$monitors" | jq -e '.[] | select(.name == "eDP-1")' >/dev/null 2>&1 && echo "yes" || echo "no")
+  edp2_active=$(echo "$monitors" | jq -e '.[] | select(.name == "eDP-2")' >/dev/null 2>&1 && echo "yes" || echo "no")
+
+  if [ "$edp1_active" = "yes" ] && [ "$edp2_active" = "yes" ]; then
+    echo "both"
+  elif [ "$edp1_active" = "yes" ]; then
+    echo "top"
+  elif [ "$edp2_active" = "yes" ]; then
+    echo "bottom"
+  else
+    echo "none"
+  fi
+}
+
+# Helper: list active external displays
+function active-external-displays {
+  hyprctl -j monitors | jq -r '.[] | select(.name | startswith("eDP") | not) | .name'
+}
+
+# Helper: restart mpvpaper wallpaper (if enabled)
+function restart-wallpaper {
+  [ "$mpvpaper" = "1" ] || return
+  killall mpvpaper 2>/dev/null
+  sleep 0.5
+  mpvpaper -vs -o "no-audio loop --panscan=1.0 --speed=1.0" "*" ~/Videos/aveva_purple_video_background.mp4 &
+}
+
+case "$1" in
+  # Display mode commands
+  top)
+    hyprctl keyword monitor "eDP-1,$preferred_resolution,0x0,$ui_scale,vrr,$vrr"
+    hyprctl keyword monitor "eDP-2,disable"
+    restart-wallpaper
+    ;;
+
+  bottom)
+    hyprctl keyword monitor "eDP-2,$preferred_resolution,0x0,$ui_scale,vrr,$vrr"
+    hyprctl keyword monitor "eDP-1,disable"
+    restart-wallpaper
+    ;;
+
+  both)
+    hyprctl keyword monitor "eDP-1,$preferred_resolution,auto,$ui_scale,vrr,$vrr"
+    hyprctl keyword monitor "eDP-2,$preferred_resolution,auto-down,$ui_scale,vrr,$vrr"
+    restart-wallpaper
+    ;;
+
+  toggle)
+    current=$(get-internal-status)
+    if [ "$current" = "both" ]; then
+      "$0" top
+    else
+      "$0" both
+    fi
+    ;;
+
+  # Orientation commands
+  undefined|normal|bottom-up)
+    if keyboard-is-attached; then
+      "$0" top
+    else
+      "$0" both
+    fi
+    ;;
+
+  left-up)
+    # Both screens rotated 90 degrees left (transform 1)
+    # eDP-1 on left, eDP-2 on right
+    hyprctl keyword monitor "eDP-1,$preferred_resolution,auto,$ui_scale,transform,1,vrr,$vrr"
+    hyprctl keyword monitor "eDP-2,$preferred_resolution,auto-left,$ui_scale,transform,1,vrr,$vrr"
+    restart-wallpaper
+    ;;
+
+  right-up)
+    # Both screens rotated 270 degrees (transform 3)
+    # eDP-2 on left, eDP-1 on right
+    hyprctl keyword monitor "eDP-2,$preferred_resolution,auto,$ui_scale,transform,3,vrr,$vrr"
+    hyprctl keyword monitor "eDP-1,$preferred_resolution,auto-left,$ui_scale,transform,3,vrr,$vrr"
+    restart-wallpaper
+    ;;
+
+  # Daemon commands
+  watch-displays)
+    "$0" "$(get-orientation)"
+    while inotifywait -e attrib /dev/bus/usb/*/ ; do
+      if ! external-display-connected; then
+        "$0" "$(get-orientation)"
+      fi
+    done
+    ;;
+
+  watch-rotation)
+    monitor-sensor --accel |
+      stdbuf -oL grep orientation |
+      stdbuf -oL cut -d: -f2 |
+      stdbuf -oL sed 's/[ )]//g' |
+      xargs -I '{}' stdbuf -oL "$0" '{}'
+    ;;
+
+  # Status commands
+  status-internal)
+    get-internal-status
+    ;;
+
+  status)
+    externals=$(active-external-displays | tr '\n' '+' | sed 's/+$//')
+    if [ -n "$externals" ]; then
+      echo -n "${externals}+"
+    fi
+    get-internal-status
+    ;;
+
+  # Utility commands
+  sync-backlight)
+    cat "/sys/class/backlight/intel_backlight/brightness" |
+      suenv tee /sys/class/backlight/$backlight/brightness
+    ;;
+
+  watch-backlight)
+    "$0" sync-backlight
+    while inotifywait -e modify /sys/class/backlight/intel_backlight/brightness ; do
+      "$0" sync-backlight
+    done
+    ;;
+
+  bat-limit)
+    echo "${2:-80}" | suenv tee /sys/class/power_supply/BAT0/charge_control_end_threshold
+    ;;
+
+  set-kb-backlight)
+    suenv python3 bk.py "$2"
+    ;;
+
+  set-tablet-mapping)
+    # Map touchscreens to their respective displays
+    hyprctl keyword "device[elan9008:00-04f3:425b]:output" "eDP-1"
+    hyprctl keyword "device[elan9009:00-04f3:425a]:output" "eDP-2"
+    # Map stylus/tablet inputs to their respective displays
+    hyprctl keyword "device[elan9008:00-04f3:425b-stylus]:output" "eDP-1"
+    hyprctl keyword "device[elan9009:00-04f3:425a-stylus]:output" "eDP-2"
+    ;;
+
+  *)
+    echo "Usage: duo-hypr <command>"
+    echo ""
+    echo "Display modes:"
+    echo "  top              Show only top screen (eDP-1)"
+    echo "  bottom           Show only bottom screen (eDP-2)"
+    echo "  both             Show both screens stacked"
+    echo "  toggle           Toggle between top-only and both"
+    echo ""
+    echo "Orientation (auto-detect keyboard):"
+    echo "  normal           Upright: keyboard attached=top, detached=both"
+    echo "  bottom-up        Same as normal"
+    echo "  left-up          Both screens rotated left"
+    echo "  right-up         Both screens rotated right"
+    echo ""
+    echo "Daemons:"
+    echo "  watch-displays   Watch USB for keyboard attach/detach"
+    echo "  watch-rotation   Watch accelerometer for orientation changes"
+    echo ""
+    echo "Status:"
+    echo "  status           Show current display configuration"
+    echo "  status-internal  Show only internal display status"
+    echo ""
+    echo "Utilities:"
+    echo "  sync-backlight   Sync brightness from eDP-1 to eDP-2"
+    echo "  watch-backlight  Continuously sync brightness"
+    echo "  bat-limit [N]    Set battery charge limit (default 80%)"
+    echo "  set-kb-backlight <0-3>  Set keyboard backlight level"
+    echo "  set-tablet-mapping      Map touchscreens/stylus to correct displays"
+    ;;
+esac

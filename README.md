@@ -3,66 +3,77 @@
 Features:
 * brightness sync (any)
 * battery limiter (any)
-* touch/pen panels mapping (GNOME-specific, requires GNOME 46 or a backported Mutter patch)
-* automatic bottom screen on/off (GNOME-specific)
-* automatic rotation (GNOME-specific)
+* touch/pen panels mapping (Hyprland)
+* automatic bottom screen on/off (Hyprland)
+* automatic rotation (Hyprland)
 
-## panel mapping
+## Hyprland
 
-`duo set-tablet-mapping` will set necessary dconf settings, but for them to work you need a Mutter with a patch from https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3556 and libwacom with this patch https://github.com/linuxwacom/libwacom/pull/640 . Both are merged upstream, so you can just wait.
+The `duo-hypr` script provides automatic display management for Hyprland.
 
-## bottom screen toggle on GNOME
+### Dependencies
 
-Make sure gnome-monitor-config, usbutils and inotify-tools are installed, the script relies on the `gnome-monitor-config`, `lsusb` and `inotifywait` commands from them.
-
-Before the next steps, you may need or want to change the scaling settings or change the config at the top of `duo` based on the version of the duo that you have (1080p vs 3k display models)
-
-For automatic screen management run `duo watch-displays` somewhere at the start of your GNOME session.
-
-For manual screen management there are `duo top`, `duo bottom`, `duo both` and `duo toggle` (toggles between top and both) commands.
-
-In addition there's also `duo toggle-bottom-touch` to toggle touch for the bottom screen, so you can draw with a pen while resting your hand on the screen.
-
-## automatic rotation
-
-Make sure iio-sensor-proxy is installed, the script relies on `monitor-sensor` command from it. Once it's installed and you followed the steps above for dualscreen setup just run `duo watch-rotation` somewhere at the start of your GNOME session.
-
-## brightness sync
-
-Brightness control requires root permissions. I prefer to have sudo with a password by default, so I use a hack to have a NOPASSWD sudo for /usr/bin/env which allows to execute any command. Line in /etc/sudoers looks like `%wheel  ALL=(ALL:ALL)    NOPASSWD: /usr/bin/env`. On NixOS the relevant part of the config is this:
-
-```
-  security.sudo = {
-    enable = true;
-    extraRules = [{
-      commands = [
-        {
-          command = "/usr/bin/env";
-          options = [ "NOPASSWD" ];
-        }
-      ];
-      groups = [ "wheel" ];
-    }];
-  };
+```bash
+sudo pacman -S jq inotify-tools iio-sensor-proxy usbutils
 ```
 
-Once the sudo setup is done you can either run `duo sync-backlight` to sync it once (you may want to bind it to some hotkey) or you can run `duo watch-backlight` at login and it will keep syncing your brightness from the top display to the bottom one.
+### Configuration
 
-For most linux distros there is an included systemd service file: `brightness-sync.service` that just needs `/path/to/duo` changed before moving it to `/etc/systemd/system` to enable brightness sync in the background.
+Edit the configuration variables at the top of `duo-hypr` to match your hardware:
 
-## battery limiter
+```bash
+preferred_resolution="1920x1200@60"  # or "2880x1800@120" for 3K model
+ui_scale=1                            # 1.5 for 3K model
+vrr=1                                 # 0 to disable VRR
+mpvpaper=0                            # 1 to enable custom mpvpaper reset with orientation change
+```
 
-Requires same sudo setup as for the brightness sync. Most likely you want to run `duo bat-limit` or `duo bat-limit 75` (where 75 is your desired threshold percentage, 80 is used if omited) once at the start of your desktop session.
+### Usage
 
-## keyboard backlight control
+Add to your `~/.config/hypr/hyprland.conf`:
 
-Requires python3 and pyusb installed. `duo set-kb-backlight <0|1|2|3>` configures keyboard backlight, with 0 meaning off and 3 meaning max brightness.
+```ini
+exec-once = /path/to/duo-hypr watch-displays
+exec-once = /path/to/duo-hypr watch-rotation
+exec-once = /path/to/duo-hypr watch-backlight
+exec-once = /path/to/duo-hypr set-tablet-mapping
+```
 
-## Notes concerning usage on Fedora 40
+Or configure tablet/touchscreen mapping directly in hyprland.conf:
 
-The steps described above work on Fedora 40 with the following specific changes:
-Prerequisities:
-`sudo dnf install lm_sensors gnome-monitor-config inotofy-tools`
-Libwacom files elan-425a.tablet and elan-425b.tablet should be copied to /usr/share/libwacom
-For brightness sync to work properly, line 10 of the duo.sh should be modified to `backlight=card1-eDP-2-backlight`
+```ini
+device {
+    name = elan9008:00-04f3:425b
+    output = eDP-1
+}
+device {
+    name = elan9009:00-04f3:425a
+    output = eDP-2
+}
+device {
+    name = elan9008:00-04f3:425b-stylus
+    output = eDP-1
+}
+device {
+    name = elan9009:00-04f3:425a-stylus
+    output = eDP-2
+}
+```
 
+This will automatically:
+- Switch to top screen only when keyboard is attached
+- Switch to both screens when keyboard is detached
+- Rotate both screens when the device is rotated
+- Sync brightness between displays
+- Map touchscreen/stylus input to the correct display
+
+### Manual Commands
+
+| Command | Description |
+|---------|-------------|
+| `duo-hypr top` | Show only top screen (eDP-1) |
+| `duo-hypr bottom` | Show only bottom screen (eDP-2) |
+| `duo-hypr both` | Show both screens stacked |
+| `duo-hypr toggle` | Toggle between top-only and both |
+| `duo-hypr status` | Show current display configuration |
+| `duo-hypr set-tablet-mapping` | Map touchscreen/stylus to correct displays |
