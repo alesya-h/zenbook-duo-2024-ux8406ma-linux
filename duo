@@ -13,11 +13,11 @@ else
   preferred_resolution="2880x1800@120.000"
 fi
 
-ui_scale=1.7475727796554565 # 1.75
+ui_scale=1.66667
 if mutter-feature-enabled scale-monitor-framebuffer ; then
-  ui_scale=1.7475727796554565 # 1.75
-  # y offset = height of resolution / ui_scale (1800/1.7475... = 1030), but better to check via bustle (recording session bus, you are interested in org.gnome.Mutter.DisplayConfig.ApplyMonitorsConfig call. start recording and configure display in gnome display settings)
-  y_offset=1030
+  ui_scale=1.66667
+  # y offset = height of resolution / ui_scale (1800/1.66667... = 1080), but better to check via bustle (recording session bus, you are interested in org.gnome.Mutter.DisplayConfig.ApplyMonitorsConfig call. start recording and configure display in gnome display settings)
+  y_offset=1080
 else
   ui_scale=2
   y_offset=1800
