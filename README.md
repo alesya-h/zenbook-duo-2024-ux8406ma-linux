@@ -77,7 +77,7 @@ Requires python3 and pyusb installed. `duo set-kb-backlight <0|1|2|3>` configure
 
 The steps described above work on Fedora 40 with the following specific changes:
 Prerequisities:
-`sudo dnf install lm_sensors gnome-monitor-config inotofy-tools`
+`sudo dnf install lm_sensors gnome-monitor-config inotify-tools`
 Libwacom files elan-425a.tablet and elan-425b.tablet should be copied to /usr/share/libwacom
 For brightness sync to work properly, line 10 of the duo.sh should be modified to `backlight=card1-eDP-2-backlight`
 
