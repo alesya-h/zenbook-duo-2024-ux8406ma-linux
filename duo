@@ -6,6 +6,9 @@ function mutter-feature-enabled {
   dconf read "/org/gnome/mutter/experimental-features"|grep "$1" > /dev/null
 }
 
+#  top_screen_touch_panel="/sys/devices/pci0000:00/0000:00:15.0/i2c_designware.0/i2c-1/i2c-ELAN9008:00/0018:04F3:425B.0007/"
+bottom_screen_touch_panel="/sys/devices/pci0000:00/0000:00:19.1/i2c_designware.3/i2c-4/i2c-ELAN9009:00/0018:04F3:425A.0008/"
+
 # 3k model
 if mutter-feature-enabled variable-refresh-rate ; then
   preferred_resolution="2880x1800@120.000+vrr"
@@ -50,6 +53,10 @@ function keyboard-is-attached {
   lsusb|grep 0b05:1b2c
 }
 
+function set-bottom-screen-touch-inhibition {
+  echo "$1"|suenv tee $bottom_screen_touch_panel/input/input*/inhibited
+}
+
 case "$1" in
   watch-displays)
     "$0" "$(get-orientation)"
@@ -74,25 +81,30 @@ case "$1" in
   top)
     gnome-monitor-config set \
       -LpM eDP-1 -m $preferred_resolution  -s $ui_scale -x 0 -y 0
+    set-bottom-screen-touch-inhibition 1
     ;;
   both)
     gnome-monitor-config set \
       -LpM eDP-1 -m $preferred_resolution -s $ui_scale -x 0 -y 0 \
       -LM  eDP-2 -m $preferred_resolution -s $ui_scale -x 0 -y $y_offset
+    set-bottom-screen-touch-inhibition 0
     ;;
   bottom)
     gnome-monitor-config set \
       -LpM eDP-2 -m $preferred_resolution -s $ui_scale -x 0 -y 0
+    set-bottom-screen-touch-inhibition 0
     ;;
   left-up)
     gnome-monitor-config set \
       -LpM eDP-2 -m $preferred_resolution -s $ui_scale -t left  -x 0         -y 0 \
       -LM  eDP-1 -m $preferred_resolution -s $ui_scale -t left  -x $y_offset -y 0
+    set-bottom-screen-touch-inhibition 0
     ;;
   right-up)
     gnome-monitor-config set \
       -LM  eDP-1 -m $preferred_resolution -s $ui_scale -t right -x 0         -y 0 \
       -LpM eDP-2 -m $preferred_resolution -s $ui_scale -t right -x $y_offset -y 0
+    set-bottom-screen-touch-inhibition 0
     ;;
   status-internal)
     internal_monitors="$(gnome-monitor-config list|grep -E "Monitor \\[ eDP-. \\] ON")"
