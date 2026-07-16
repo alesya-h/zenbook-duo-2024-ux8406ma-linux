@@ -1,0 +1,5 @@
+[ASUS Zenbook Duo Keyboard Touchpad]
+MatchUdevType=touchpad
+MatchVendor=0x0B05
+MatchName=*ASUS Zenbook Duo Keyboard Touchpad
+AttrTPKComboLayout=below

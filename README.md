@@ -3,6 +3,7 @@
 Features:
 * brightness sync (any)
 * battery limiter (any)
+* palm rejection (any)
 * touch/pen panels mapping (GNOME-specific, requires GNOME 46 or a backported Mutter patch)
 * automatic bottom screen on/off (GNOME-specific)
 * automatic rotation (GNOME-specific)
@@ -10,6 +11,20 @@ Features:
 ## panel mapping
 
 `duo set-tablet-mapping` will set necessary dconf settings, but for them to work you need a Mutter with a patch from https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3556 and libwacom with this patch https://github.com/linuxwacom/libwacom/pull/640 . Both are merged upstream, so you can just wait.
+
+## palm rejection
+
+Copy libinput/local-overrides.quirks to /etc/libinput/local-overrides.quirks . It tells libinput that "external" keyboard and the touchpad are together, and allows it to run its palm rejection magic. On NixOS you can do (using the content of that file)
+
+```nix
+  environment.etc."libinput/local-overrides.quirks".text = ''
+    [ASUS Zenbook Duo Keyboard Touchpad]
+    MatchUdevType=touchpad
+    MatchVendor=0x0B05
+    MatchName=*ASUS Zenbook Duo Keyboard Touchpad
+   AttrTPKComboLayout=below
+  '';
+```
 
 ## bottom screen toggle on GNOME
 
