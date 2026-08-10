@@ -61,6 +61,15 @@ Brightness control requires root permissions. I prefer to have sudo with a passw
   };
 ```
 
+Alternatively, `udev/99-zenbook-duo.rules` grants the wheel group write access to just the four files the script writes to, which is a good deal narrower than passwordless root for every command:
+
+```
+sudo cp udev/99-zenbook-duo.rules /etc/udev/rules.d/
+sudo udevadm control --reload && sudo udevadm trigger
+```
+
+The script writes directly to anything it can and falls back to sudo for the rest, so the two setups are interchangeable and you only need one.
+
 Once the sudo setup is done you can either run `duo sync-backlight` to sync it once (you may want to bind it to some hotkey) or you can run `duo watch-backlight` at login and it will keep syncing your brightness from the top display to the bottom one.
 
 For most linux distros there is an included systemd service file: `brightness-sync.service` that just needs `/path/to/duo` changed before moving it to `/etc/systemd/system` to enable brightness sync in the background.

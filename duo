@@ -22,6 +22,21 @@ function suenv {
   sudo /usr/bin/env "$@"
 }
 
+# udev/99-zenbook-duo.rules gives the wheel group write access to exactly the
+# files below, which is a great deal less than the sudoers rule in the README
+# hands out. Fall back to sudo so the script still works without the rules.
+function wr {
+  local value="$1"; shift
+  local f
+  for f in "$@"; do
+    if [ -w "$f" ]; then
+      printf '%s\n' "$value" > "$f"
+    else
+      printf '%s\n' "$value" | suenv tee "$f" > /dev/null
+    fi
+  done
+}
+
 function get-orientation {
   gdbus call --system --dest net.hadess.SensorProxy --object-path /net/hadess/SensorProxy --method org.freedesktop.DBus.Properties.Get net.hadess.SensorProxy AccelerometerOrientation | sed "s/.*<'\([^']*\)'>.*/\1/"
 }
@@ -30,8 +45,12 @@ function keyboard-is-attached {
   lsusb|grep 0b05:1b2c
 }
 
+function keyboard-usb-node {
+  lsusb -d 0b05:1b2c|sed -nE 's|^Bus ([0-9]+) Device ([0-9]+):.*|/dev/bus/usb/\1/\2|p'|head -1
+}
+
 function set-bottom-screen-touch-inhibition {
-  echo "$1"|suenv tee $bottom_screen_touch_panel/input/input*/inhibited
+  wr "$1" $bottom_screen_touch_panel/input/input*/inhibited
 }
 
 case "$1" in
@@ -96,14 +115,21 @@ case "$1" in
     backend toggle-bottom-touch
     ;;
   bat-limit)
-    echo "${2:-80}" | suenv tee /sys/class/power_supply/BAT0/charge_control_end_threshold
+    wr "${2:-80}" /sys/class/power_supply/BAT0/charge_control_end_threshold
     ;;
   sync-backlight)
-    cat "/sys/class/backlight/intel_backlight/brightness" |
-      suenv tee $bottom_backlight/brightness
+    wr "$(cat /sys/class/backlight/intel_backlight/brightness)" \
+      $bottom_backlight/brightness
     ;;
   set-kb-backlight)
-    suenv python3 bk.py "$2"
+    # The udev rules leave the keyboard's USB node group writable, and then
+    # pyusb needs no privileges at all.
+    node="$(keyboard-usb-node)"
+    if [ -n "$node" ] && [ -w "$node" ]; then
+      python3 bk.py "$2"
+    else
+      suenv python3 bk.py "$2"
+    fi
     ;;
   watch-backlight)
     "$0" sync-backlight

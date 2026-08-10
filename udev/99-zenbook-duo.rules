@@ -1,0 +1,34 @@
+# Grant the wheel group write access to exactly the four files the duo script
+# writes to, as an alternative to the NOPASSWD sudoers rule in the README, which
+# grants passwordless root for every command rather than for these.
+#
+# Install with:
+#   sudo cp udev/99-zenbook-duo.rules /etc/udev/rules.d/
+#   sudo udevadm control --reload && sudo udevadm trigger
+#
+# The script falls back to sudo for anything it cannot write, so the rules and
+# the sudoers line are interchangeable, and having neither still works if you do
+# not mind typing a password.
+
+# Bottom panel backlight, for `duo sync-backlight`. The card number comes from
+# enumeration order, hence the glob.
+SUBSYSTEM=="backlight", KERNEL=="card*-eDP-2-backlight", \
+  RUN+="/usr/bin/chgrp wheel /sys%p/brightness", \
+  RUN+="/usr/bin/chmod g+w /sys%p/brightness"
+
+# Battery charge cap, for `duo bat-limit`.
+SUBSYSTEM=="power_supply", KERNEL=="BAT0", \
+  ATTR{charge_control_end_threshold}=="?*", \
+  RUN+="/usr/bin/chgrp wheel /sys%p/charge_control_end_threshold", \
+  RUN+="/usr/bin/chmod g+w /sys%p/charge_control_end_threshold"
+
+# Bottom touchscreen and stylus inhibit, for the touch handling in `duo top`.
+# Matched on the ACPI id of the controller, which is ELAN9009 on every UX8406MA,
+# rather than on the HID product id, which differs between panel variants.
+SUBSYSTEM=="input", KERNEL=="input*", KERNELS=="i2c-ELAN9009:00", \
+  RUN+="/usr/bin/chgrp wheel /sys%p/inhibited", \
+  RUN+="/usr/bin/chmod g+w /sys%p/inhibited"
+
+# Detachable keyboard, so `duo set-kb-backlight` can reach it through libusb.
+SUBSYSTEM=="usb", ATTR{idVendor}=="0b05", ATTR{idProduct}=="1b2c", \
+  MODE="0660", GROUP="wheel"
