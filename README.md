@@ -28,9 +28,9 @@ Copy libinput/local-overrides.quirks to /etc/libinput/local-overrides.quirks . I
 
 ## bottom screen toggle on GNOME
 
-Make sure gnome-monitor-config, usbutils and inotify-tools are installed, the script relies on the `gnome-monitor-config`, `lsusb` and `inotifywait` commands from them.
+Make sure gnome-monitor-config, usbutils, inotify-tools and python3 are installed, the script relies on the `gnome-monitor-config`, `lsusb` and `inotifywait` commands from them and on python3 to read the panel geometry back out of mutter.
 
-Before the next steps, you may need or want to change the scaling settings or change the config at the top of `duo` based on the version of the duo that you have (1080p vs 3k display models)
+The panel mode, the scale in force, and the EDID and digitizer ids of both screens are read off the machine at runtime, so there is nothing at the top of `duo` to edit for the 1080p or the 3k model.
 
 For automatic screen management run `duo watch-displays` somewhere at the start of your GNOME session.
 

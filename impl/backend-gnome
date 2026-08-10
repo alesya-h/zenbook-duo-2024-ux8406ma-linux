@@ -2,56 +2,84 @@
 
 # GNOME/Mutter backend for duo: display layouts, monitor status, input mapping.
 
+here="$(dirname "$(realpath "$0")")"
+
+top_connector=eDP-1
+bottom_connector=eDP-2
+
+# ELAN9008 drives the top digitizer and ELAN9009 the bottom one on every
+# UX8406MA. The product id after the vendor differs between panel variants, so
+# it is read off the device rather than written down.
+top_digitizer_acpi=ELAN9008
+bottom_digitizer_acpi=ELAN9009
+
 function mutter-feature-enabled {
   dconf read "/org/gnome/mutter/experimental-features"|grep "$1" > /dev/null
 }
 
-# 3k model
-if mutter-feature-enabled variable-refresh-rate ; then
-  preferred_resolution="2880x1800@120.000+vrr"
-else
-  preferred_resolution="2880x1800@120.000"
-fi
+# Asks mutter for the panel geometry that used to be a block of constants per
+# variant. Deferred rather than run at startup because status-internal is polled
+# every few seconds by the status script and needs none of it.
+function read-panel {
+  local mode_id height scale variable
+  read -r mode_id height scale variable \
+    < <("$here/display-info.py" panel "$top_connector") || return 1
 
-if mutter-feature-enabled scale-monitor-framebuffer ; then
-  ui_scale=1.66667
-  # y offset = height of resolution / ui_scale (1800/1.66667... = 1080), but better to check via bustle (recording session bus, you are interested in org.gnome.Mutter.DisplayConfig.ApplyMonitorsConfig call. start recording and configure display in gnome display settings)
-  y_offset=1080
-else
-  ui_scale=2
-  y_offset=1800
-fi
+  preferred_resolution="$mode_id"
+  if [ "$variable" = 1 ] && mutter-feature-enabled variable-refresh-rate ; then
+    preferred_resolution="$preferred_resolution+vrr"
+  fi
 
-# 1080p model
-#preferred_resolution="1920x1200@60.003"
-#ui_scale=1
-#y_offset=1200
+  ui_scale="$scale"
+  # The bottom panel starts where the top one ends, in logical pixels.
+  y_offset="$(awk -v h="$height" -v s="$scale" 'BEGIN{printf "%d", h/s+0.5}')"
+}
+
+# The EDID triple GNOME keys a tablet or touchscreen mapping on, plus the
+# connector, in the form dconf wants.
+function output-spec {
+  local vendor product serial
+  read -r vendor product serial < <("$here/display-info.py" spec "$1") || return 1
+  printf "['%s', '%s', '%s', '%s']" "$vendor" "$product" "$serial" "$1"
+}
+
+function digitizer-id {
+  local dir
+  for dir in /sys/bus/i2c/devices/i2c-"$1":*/[0-9]*:*:*.*; do
+    [ -e "$dir" ] || continue
+    basename "$dir" |
+      awk -F: '{printf "%s:%s\n", tolower($2), tolower(substr($3, 1, index($3, ".") - 1))}'
+    return 0
+  done
+  return 1
+}
 
 case "$1" in
   set-layout)
+    read-panel || { echo "backend-gnome: cannot read panel geometry from mutter" >&2; exit 1; }
     case "$2" in
       top)
         gnome-monitor-config set \
-          -LpM eDP-1 -m $preferred_resolution -s $ui_scale -x 0 -y 0
+          -LpM $top_connector -m $preferred_resolution -s $ui_scale -x 0 -y 0
         ;;
       both)
         gnome-monitor-config set \
-          -LpM eDP-1 -m $preferred_resolution -s $ui_scale -x 0 -y 0 \
-          -LM  eDP-2 -m $preferred_resolution -s $ui_scale -x 0 -y $y_offset
+          -LpM $top_connector    -m $preferred_resolution -s $ui_scale -x 0 -y 0 \
+          -LM  $bottom_connector -m $preferred_resolution -s $ui_scale -x 0 -y $y_offset
         ;;
       bottom)
         gnome-monitor-config set \
-          -LpM eDP-2 -m $preferred_resolution -s $ui_scale -x 0 -y 0
+          -LpM $bottom_connector -m $preferred_resolution -s $ui_scale -x 0 -y 0
         ;;
       left-up)
         gnome-monitor-config set \
-          -LpM eDP-2 -m $preferred_resolution -s $ui_scale -t left  -x 0         -y 0 \
-          -LM  eDP-1 -m $preferred_resolution -s $ui_scale -t left  -x $y_offset -y 0
+          -LpM $bottom_connector -m $preferred_resolution -s $ui_scale -t left  -x 0         -y 0 \
+          -LM  $top_connector    -m $preferred_resolution -s $ui_scale -t left  -x $y_offset -y 0
         ;;
       right-up)
         gnome-monitor-config set \
-          -LM  eDP-1 -m $preferred_resolution -s $ui_scale -t right -x 0         -y 0 \
-          -LpM eDP-2 -m $preferred_resolution -s $ui_scale -t right -x $y_offset -y 0
+          -LM  $top_connector    -m $preferred_resolution -s $ui_scale -t right -x 0         -y 0 \
+          -LpM $bottom_connector -m $preferred_resolution -s $ui_scale -t right -x $y_offset -y 0
         ;;
       *) echo "Usage: backend-gnome set-layout <top|both|bottom|left-up|right-up>" >&2; exit 1
     esac
@@ -60,31 +88,34 @@ case "$1" in
     [ "$(gnome-monitor-config list|grep display-name|grep -v 'Built-in display'|wc -l)" != "0" ]
     ;;
   active-external-displays)
-    gnome-monitor-config list|grep -vE 'eDP-[12]'|sed -nE 's/Monitor \[ (.+) \] ON/\1/p'
+    gnome-monitor-config list|grep -vE "$top_connector|$bottom_connector"|sed -nE 's/Monitor \[ (.+) \] ON/\1/p'
     ;;
   status-internal)
-    internal_monitors="$(gnome-monitor-config list|grep -E "Monitor \\[ eDP-. \\] ON")"
+    internal_monitors="$(gnome-monitor-config list|grep -E "Monitor \\[ ($top_connector|$bottom_connector) \\] ON")"
     case "$(echo "$internal_monitors"|grep -v -E "^$"|wc -l)" in
       0) echo "none" ;;
       1) case "$(echo "$internal_monitors"|grep ON)" in
-           "Monitor [ eDP-1 ] ON") echo top ;;
-           "Monitor [ eDP-2 ] ON") echo bottom ;;
+           "Monitor [ $top_connector ] ON") echo top ;;
+           "Monitor [ $bottom_connector ] ON") echo bottom ;;
          esac ;;
       2) echo "both" ;;
     esac
     ;;
   map-inputs)
+    top_output="$(output-spec "$top_connector")" || exit 1
+    bottom_output="$(output-spec "$bottom_connector")" || exit 1
+    top_id="$(digitizer-id "$top_digitizer_acpi")" || exit 1
+    bottom_id="$(digitizer-id "$bottom_digitizer_acpi")" || exit 1
     for type in tablets touchscreens; do
-      dconf write "/org/gnome/desktop/peripherals/${type}/04f3:425b/output" \
-        "['SDC', '0x419d', '0x00000000', 'eDP-1']"
-      dconf write "/org/gnome/desktop/peripherals/${type}/04f3:425a/output" \
-        "['SDC', '0x419d', '0x00000000', 'eDP-2']"
+      dconf write "/org/gnome/desktop/peripherals/${type}/${top_id}/output" "$top_output"
+      dconf write "/org/gnome/desktop/peripherals/${type}/${bottom_id}/output" "$bottom_output"
     done
     ;;
   toggle-bottom-touch)
-    path="/org/gnome/desktop/peripherals/touchscreens/04f3:425a/output"
+    bottom_id="$(digitizer-id "$bottom_digitizer_acpi")" || exit 1
+    path="/org/gnome/desktop/peripherals/touchscreens/${bottom_id}/output"
     if [ -z "$(dconf read "$path")" ]; then
-      dconf write "$path" "['SDC', '0x419d', '0x00000000', 'eDP-2']"
+      dconf write "$path" "$(output-spec "$bottom_connector")"
     else
       dconf reset "$path"
     fi
