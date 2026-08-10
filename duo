@@ -8,17 +8,33 @@ function backend {
   "impl/backend-$backend" "$@"
 }
 
-#  top_screen_touch_panel="/sys/devices/pci0000:00/0000:00:15.0/i2c_designware.0/i2c-1/i2c-ELAN9008:00/0018:04F3:425B.0007/"
-bottom_screen_touch_panel="/sys/devices/pci0000:00/0000:00:19.1/i2c_designware.3/i2c-4/i2c-ELAN9009:00/0018:04F3:425A.0008/"
+# The absolute PCI path embeds the i2c bus number and the HID instance suffix,
+# both of which come from enumeration order and move between boots; the product
+# id in the middle also differs between panel variants. The i2c symlink and a
+# glob are stable against all three.
+#  top_screen_touch_panel="/sys/bus/i2c/devices/i2c-ELAN9008:00/0018:04F3:*"
+bottom_screen_touch_panel="/sys/bus/i2c/devices/i2c-ELAN9009:00/0018:04F3:*"
 
-# 3k model
-backlight=card1-eDP-2-backlight
-
-# 1080p model
-#backlight=card1-eDP-2-backlight
+# Likewise card1 is just whichever card the panel came up on.
+bottom_backlight="/sys/class/backlight/card*-eDP-2-backlight"
 
 function suenv {
   sudo /usr/bin/env "$@"
+}
+
+# udev/99-zenbook-duo.rules gives the wheel group write access to exactly the
+# files below, which is a great deal less than the sudoers rule in the README
+# hands out. Fall back to sudo so the script still works without the rules.
+function wr {
+  local value="$1"; shift
+  local f
+  for f in "$@"; do
+    if [ -w "$f" ]; then
+      printf '%s\n' "$value" > "$f"
+    else
+      printf '%s\n' "$value" | suenv tee "$f" > /dev/null
+    fi
+  done
 }
 
 function get-orientation {
@@ -29,8 +45,12 @@ function keyboard-is-attached {
   lsusb|grep 0b05:1b2c
 }
 
+function keyboard-usb-node {
+  lsusb -d 0b05:1b2c|sed -nE 's|^Bus ([0-9]+) Device ([0-9]+):.*|/dev/bus/usb/\1/\2|p'|head -1
+}
+
 function set-bottom-screen-touch-inhibition {
-  echo "$1"|suenv tee $bottom_screen_touch_panel/input/input*/inhibited
+  wr "$1" $bottom_screen_touch_panel/input/input*/inhibited
 }
 
 case "$1" in
@@ -95,14 +115,21 @@ case "$1" in
     backend toggle-bottom-touch
     ;;
   bat-limit)
-    echo "${2:-80}" | suenv tee /sys/class/power_supply/BAT0/charge_control_end_threshold
+    wr "${2:-80}" /sys/class/power_supply/BAT0/charge_control_end_threshold
     ;;
   sync-backlight)
-    cat "/sys/class/backlight/intel_backlight/brightness" |
-      suenv tee /sys/class/backlight/$backlight/brightness
+    wr "$(cat /sys/class/backlight/intel_backlight/brightness)" \
+      $bottom_backlight/brightness
     ;;
   set-kb-backlight)
-    suenv python3 bk.py "$2"
+    # The udev rules leave the keyboard's USB node group writable, and then
+    # pyusb needs no privileges at all.
+    node="$(keyboard-usb-node)"
+    if [ -n "$node" ] && [ -w "$node" ]; then
+      python3 bk.py "$2"
+    else
+      suenv python3 bk.py "$2"
+    fi
     ;;
   watch-backlight)
     "$0" sync-backlight
@@ -111,10 +138,16 @@ case "$1" in
     done
     ;;
   watch-rotation)
-    monitor-sensor --accel |
-      stdbuf -oL grep orientation |
-      stdbuf -oL cut -d: -f2 |
-      stdbuf -oL sed 's/[ )]//g' |
+    # iio-sensor-proxy 3.8 appends ", tilt: <value>" to the opening
+    # "Has accelerometer (orientation: X, ...)" line, which `cut -d: -f2` turns
+    # into "X,tilt", and duo then prints its usage instead of rotating. Match the
+    # orientation value itself, on that line and on the later
+    # "orientation changed: X" ones, and drop anything that is not a layout we
+    # handle, such as "undefined".
+    # monitor-sensor needs its own stdbuf too: piped, its stdout is block
+    # buffered, so events sit unflushed instead of rotating anything.
+    stdbuf -oL monitor-sensor --accel |
+      stdbuf -oL sed -nE 's/.*orientation( changed)?: (normal|bottom-up|left-up|right-up).*/\2/p' |
       xargs -I '{}' stdbuf -oL "$0" '{}'
     ;;
   *) echo "Usage: duo <top|bottom|both|set-displays|toggle|status|set-tablet-mapping|bat-limit|sync-backlight|set-kb-backlight|watch-backlight|watch-rotation|watch-displays>"

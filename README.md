@@ -28,9 +28,9 @@ Copy libinput/local-overrides.quirks to /etc/libinput/local-overrides.quirks . I
 
 ## bottom screen toggle on GNOME
 
-Make sure gnome-monitor-config, usbutils and inotify-tools are installed, the script relies on the `gnome-monitor-config`, `lsusb` and `inotifywait` commands from them.
+Make sure gnome-monitor-config, usbutils, inotify-tools and python3 are installed, the script relies on the `gnome-monitor-config`, `lsusb` and `inotifywait` commands from them and on python3 to read the panel geometry back out of mutter.
 
-Before the next steps, you may need or want to change the scaling settings or change the config at the top of `duo` based on the version of the duo that you have (1080p vs 3k display models)
+The panel mode, the scale in force, and the EDID and digitizer ids of both screens are read off the machine at runtime, so there is nothing at the top of `duo` to edit for the 1080p or the 3k model.
 
 For automatic screen management run `duo watch-displays` somewhere at the start of your GNOME session.
 
@@ -60,6 +60,15 @@ Brightness control requires root permissions. I prefer to have sudo with a passw
     }];
   };
 ```
+
+Alternatively, `udev/99-zenbook-duo.rules` grants the wheel group write access to just the four files the script writes to, which is a good deal narrower than passwordless root for every command:
+
+```
+sudo cp udev/99-zenbook-duo.rules /etc/udev/rules.d/
+sudo udevadm control --reload && sudo udevadm trigger
+```
+
+The script writes directly to anything it can and falls back to sudo for the rest, so the two setups are interchangeable and you only need one.
 
 Once the sudo setup is done you can either run `duo sync-backlight` to sync it once (you may want to bind it to some hotkey) or you can run `duo watch-backlight` at login and it will keep syncing your brightness from the top display to the bottom one.
 
