@@ -8,14 +8,15 @@ function backend {
   "impl/backend-$backend" "$@"
 }
 
-#  top_screen_touch_panel="/sys/devices/pci0000:00/0000:00:15.0/i2c_designware.0/i2c-1/i2c-ELAN9008:00/0018:04F3:425B.0007/"
-bottom_screen_touch_panel="/sys/devices/pci0000:00/0000:00:19.1/i2c_designware.3/i2c-4/i2c-ELAN9009:00/0018:04F3:425A.0008/"
+# The absolute PCI path embeds the i2c bus number and the HID instance suffix,
+# both of which come from enumeration order and move between boots; the product
+# id in the middle also differs between panel variants. The i2c symlink and a
+# glob are stable against all three.
+#  top_screen_touch_panel="/sys/bus/i2c/devices/i2c-ELAN9008:00/0018:04F3:*"
+bottom_screen_touch_panel="/sys/bus/i2c/devices/i2c-ELAN9009:00/0018:04F3:*"
 
-# 3k model
-backlight=card1-eDP-2-backlight
-
-# 1080p model
-#backlight=card1-eDP-2-backlight
+# Likewise card1 is just whichever card the panel came up on.
+bottom_backlight="/sys/class/backlight/card*-eDP-2-backlight"
 
 function suenv {
   sudo /usr/bin/env "$@"
@@ -99,7 +100,7 @@ case "$1" in
     ;;
   sync-backlight)
     cat "/sys/class/backlight/intel_backlight/brightness" |
-      suenv tee /sys/class/backlight/$backlight/brightness
+      suenv tee $bottom_backlight/brightness
     ;;
   set-kb-backlight)
     suenv python3 bk.py "$2"
