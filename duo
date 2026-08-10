@@ -111,10 +111,16 @@ case "$1" in
     done
     ;;
   watch-rotation)
-    monitor-sensor --accel |
-      stdbuf -oL grep orientation |
-      stdbuf -oL cut -d: -f2 |
-      stdbuf -oL sed 's/[ )]//g' |
+    # iio-sensor-proxy 3.8 appends ", tilt: <value>" to the opening
+    # "Has accelerometer (orientation: X, ...)" line, which `cut -d: -f2` turns
+    # into "X,tilt", and duo then prints its usage instead of rotating. Match the
+    # orientation value itself, on that line and on the later
+    # "orientation changed: X" ones, and drop anything that is not a layout we
+    # handle, such as "undefined".
+    # monitor-sensor needs its own stdbuf too: piped, its stdout is block
+    # buffered, so events sit unflushed instead of rotating anything.
+    stdbuf -oL monitor-sensor --accel |
+      stdbuf -oL sed -nE 's/.*orientation( changed)?: (normal|bottom-up|left-up|right-up).*/\2/p' |
       xargs -I '{}' stdbuf -oL "$0" '{}'
     ;;
   *) echo "Usage: duo <top|bottom|both|set-displays|toggle|status|set-tablet-mapping|bat-limit|sync-backlight|set-kb-backlight|watch-backlight|watch-rotation|watch-displays>"
