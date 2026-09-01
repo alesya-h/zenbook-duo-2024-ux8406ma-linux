@@ -55,7 +55,7 @@ case "$1" in
       "$0" normal
     fi
     ;;
-  normal|bottom-up)
+  normal|bottom-up|undefined)
     if keyboard-is-attached; then
       "$0" top
     else

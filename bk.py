@@ -6,7 +6,7 @@ import usb.util
 
 # USB Parameters
 VENDOR_ID = 0x0b05
-PRODUCT_ID = 0x1b2c
+PRODUCT_ID = 0x1bf2  # UX8406CA (UX8406MA original was 0x1b2c)
 REPORT_ID = 0x5A
 WVALUE = 0x035A
 WINDEX = 4
