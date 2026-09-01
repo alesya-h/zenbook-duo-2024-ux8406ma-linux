@@ -120,7 +120,7 @@ case "$1" in
     ;;
   watch-rotation)
     monitor-sensor --accel |
-      stdbuf -oL grep orientation |
+      stdbuf -oL grep "orientation changed" |
       stdbuf -oL cut -d: -f2 |
       stdbuf -oL sed 's/[ )]//g' |
       xargs -I '{}' stdbuf -oL "$0" '{}'
