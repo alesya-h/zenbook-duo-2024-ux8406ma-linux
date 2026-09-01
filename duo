@@ -9,7 +9,13 @@ function backend {
 }
 
 #  top_screen_touch_panel="/sys/devices/pci0000:00/0000:00:15.0/i2c_designware.0/i2c-1/i2c-ELAN9008:00/0018:04F3:425B.0007/"
-bottom_screen_touch_panel="/sys/devices/pci0000:00/0000:00:19.1/i2c_designware.3/i2c-4/i2c-ELAN9009:00/0018:04F3:425A.0008/"
+
+# UX8406MA (original)
+#bottom_screen_touch_panel="/sys/devices/pci0000:00/0000:00:19.1/i2c_designware.3/i2c-4/i2c-ELAN9009:00/0018:04F3:425A.0008/"
+
+# UX8406CA: different i2c bus index and touch controller device ID, found via
+# `find /sys/bus/i2c/devices -iname "*ELAN*"` on the actual hardware.
+bottom_screen_touch_panel="/sys/devices/pci0000:00/0000:00:19.1/i2c_designware.3/i2c-3/i2c-ELAN9009:00/0018:04F3:4448.0007/"
 
 # 3k model
 backlight=card1-eDP-2-backlight
