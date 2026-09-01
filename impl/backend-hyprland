@@ -10,10 +10,10 @@
 TOP=eDP-1
 BOTTOM=eDP-2
 
-# 3k model
+# 3k model (confirmed via `hyprctl monitors -j` on UX8406CA: 2880x1800@120, scale 2)
 mode="2880x1800@120"
-scale=1.66667
-y_offset=1080
+scale=2
+y_offset=900
 
 # 1080p model
 #mode="1920x1200@60"
@@ -22,12 +22,19 @@ y_offset=1080
 
 function monitors-json { hyprctl monitors -j; }
 
+# This Hyprland build parses monitor config as Lua (`hl.monitor{...}`, see
+# /usr/share/omarchy/config/hypr/monitors.lua); `hyprctl keyword monitor ...`
+# fails with "keyword can't work with non-legacy parsers. Use eval." on it,
+# so runtime changes go through `hyprctl eval` calling hl.monitor directly.
 function set-monitor { # <name> <x> <y> [transform]
-  hyprctl keyword monitor "$1,$mode,${2}x${3},$scale,transform,${4:-0}"
+  hyprctl eval "hl.monitor({ output = \"$1\", mode = \"$mode\", position = \"${2}x${3}\", scale = $scale, transform = ${4:-0}, disabled = false })"
 }
 
 function disable-monitor {
-  hyprctl keyword monitor "$1,disable"
+  # `disabled = true` alone is not enough to re-enable later: hl.monitor
+  # does not reset the flag when it's simply omitted, so set-monitor above
+  # always passes `disabled = false` explicitly.
+  hyprctl eval "hl.monitor({ output = \"$1\", disabled = true })"
 }
 
 case "$1" in
