@@ -3,6 +3,10 @@
 # Detects the display backend to use and prints its name.
 
 case "${XDG_CURRENT_DESKTOP,,}" in
+  *hyprland*)
+    echo hyprland
+    exit 0
+    ;;
   *niri*)
     echo niri
     exit 0
@@ -14,6 +18,11 @@ case "${XDG_CURRENT_DESKTOP,,}" in
 esac
 
 # Fall back to probing in case XDG_CURRENT_DESKTOP is not set.
+if [ -n "$HYPRLAND_INSTANCE_SIGNATURE" ]; then
+  echo hyprland
+  exit 0
+fi
+
 if [ -n "$NIRI_SOCKET" ]; then
   echo niri
   exit 0

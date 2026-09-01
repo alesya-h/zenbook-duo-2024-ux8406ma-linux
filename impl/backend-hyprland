@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+
+# Hyprland backend for duo: display layouts, monitor status.
+#
+# Tablet/touch output mapping is not implemented: Hyprland binds input
+# devices to outputs via static `device { output = ... }` stanzas in
+# hyprland.conf, reloaded with `hyprctl reload` -- there's no dconf-style
+# runtime toggle to hook into like on GNOME.
+
+TOP=eDP-1
+BOTTOM=eDP-2
+
+# 3k model (confirmed via `hyprctl monitors -j` on UX8406CA: 2880x1800@120, scale 2)
+mode="2880x1800@120"
+scale=2
+y_offset=900
+
+# 1080p model
+#mode="1920x1200@60"
+#scale=1
+#y_offset=1200
+
+function monitors-json { hyprctl monitors -j; }
+
+# This Hyprland build parses monitor config as Lua (`hl.monitor{...}`, see
+# /usr/share/omarchy/config/hypr/monitors.lua); `hyprctl keyword monitor ...`
+# fails with "keyword can't work with non-legacy parsers. Use eval." on it,
+# so runtime changes go through `hyprctl eval` calling hl.monitor directly.
+function set-monitor { # <name> <x> <y> [transform]
+  hyprctl eval "hl.monitor({ output = \"$1\", mode = \"$mode\", position = \"${2}x${3}\", scale = $scale, transform = ${4:-0}, disabled = false })"
+}
+
+function disable-monitor {
+  # `disabled = true` alone is not enough to re-enable later: hl.monitor
+  # does not reset the flag when it's simply omitted, so set-monitor above
+  # always passes `disabled = false` explicitly.
+  hyprctl eval "hl.monitor({ output = \"$1\", disabled = true })"
+}
+
+case "$1" in
+  set-layout)
+    case "$2" in
+      top)
+        set-monitor $TOP 0 0
+        disable-monitor $BOTTOM
+        ;;
+      both)
+        set-monitor $TOP 0 0
+        set-monitor $BOTTOM 0 "$y_offset"
+        ;;
+      bottom)
+        set-monitor $BOTTOM 0 0
+        disable-monitor $TOP
+        ;;
+      left-up|right-up)
+        # wl_output transform enum: 1 = 90 degrees, 3 = 270 degrees
+        [ "$2" = left-up ] && t=1 || t=3
+        set-monitor $BOTTOM 0 0 $t
+        set-monitor $TOP "$y_offset" 0 $t
+        ;;
+      *) echo "Usage: backend-hyprland set-layout <top|both|bottom|left-up|right-up>" >&2; exit 1
+    esac
+    ;;
+  external-display-connected)
+    [ "$(monitors-json | jq "[.[] | select(.name != \"$TOP\" and .name != \"$BOTTOM\")] | length")" != "0" ]
+    ;;
+  active-external-displays)
+    monitors-json | jq -r ".[] | select(.name != \"$TOP\" and .name != \"$BOTTOM\") | .name"
+    ;;
+  status-internal)
+    top_on="$(monitors-json | jq "any(.[]; .name == \"$TOP\")")"
+    bottom_on="$(monitors-json | jq "any(.[]; .name == \"$BOTTOM\")")"
+    if $top_on && $bottom_on; then
+      echo both
+    elif $top_on; then
+      echo top
+    elif $bottom_on; then
+      echo bottom
+    else
+      echo none
+    fi
+    ;;
+  map-inputs|toggle-bottom-touch)
+    echo "duo: not supported on the hyprland backend (needs static device{output=} config + hyprctl reload)" >&2
+    exit 1
+    ;;
+  *) echo "Usage: backend-hyprland <set-layout|external-display-connected|active-external-displays|status-internal|map-inputs|toggle-bottom-touch>" >&2; exit 1
+esac
