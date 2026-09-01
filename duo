@@ -32,7 +32,9 @@ function get-orientation {
 }
 
 function keyboard-is-attached {
-  lsusb|grep 0b05:1b2c
+  # UX8406MA (original): 0b05:1b2c
+  # UX8406CA (this unit, found via `lsusb`): 0b05:1bf2
+  lsusb|grep 0b05:1bf2
 }
 
 function set-bottom-screen-touch-inhibition {
